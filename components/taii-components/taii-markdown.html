@@ -1,0 +1,15 @@
+<dom-module id="taii-markdown">
+    <template>
+        <div class="container md">
+            <content/>
+        </div>
+    </template>
+</dom-module>
+<script>
+    Polymer({
+        is: "taii-markdown",
+        attached: function(){
+            site.markdown('.md');
+        }
+    })
+</script>

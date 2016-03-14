@@ -1,0 +1,76 @@
+<dom-module id="taii-navbar" attributes="colour title auth">
+    <template>
+        <nav class$="{{colour}}">
+          <div class="nav-wrapper">
+            <a href="#/" class="brand-logo">{{title}}</a>
+            <ul id="nav-mobile" class="right"></ul>
+          </div>
+        </nav>
+    </template>
+</dom-module>
+<script>
+    Polymer({
+        is: "taii-navbar",
+        attached: function(){
+
+        },
+        append_button: function (id, text, action){
+            var li = $('<li/>')
+                .attr('id', id)
+                .text(text)
+            ;
+            if (typeof(action) == 'object'){
+                li.click(action);
+            }
+            else if (typeof(action) == 'string'){
+                li.click(function(){
+                    window.location = action;
+                })
+            }
+            $('#nav-mobile').append(li);
+            var w = li.width() + 21;
+            li.css({"width": w, 'text-align': 'center'});
+        },
+        empty: function(){
+            $('#nav-mobile').empty();
+        },
+        navbar_mode: function(mode){
+            this.empty();
+            if (mode == "unauthed"){
+                this.append_button('register-button', 'Register', function(){
+                    site.route('/register');
+                });
+                this.append_button('login_button', 'Login', function(){
+                    site.route('/login');
+                });
+            }
+            else if (mode = 'authed') {
+                // add welcome message
+                this.append_button(
+                    'user-div',
+                    "Hello, " + $.cookie('userName'),
+                    function() {
+                        site.logout();
+                    }
+                );
+                // on mouse over, show logout button
+                $('#user-div')
+                  .mouseover(function(){
+                    $('#user-div')
+                      .text("Logout")
+                    ;
+                  })
+                  .mouseout(function(){
+                    $('#user-div')
+                      .text("Hello, " + $.cookie('userName'))
+                    ;
+                  })
+                ;
+                // Show 'my account' button
+                this.append_button('my-account', 'My Account', function (){
+                    site.route('/my-account');
+                });
+            }
+        }
+    })
+</script>

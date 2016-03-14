@@ -1,0 +1,21 @@
+<dom-module id="taii-list">
+    <template>
+        <style>
+            #list-contents {
+                display: none;
+            }
+        </style>
+        <content id="list-contents" />
+        
+    </template>
+</dom-module>
+<script>
+    Polymer({
+        is: "taii-list",
+        attached: function(){
+            $('#list-contents').each(function() {
+
+            });
+        }
+    })
+</script>
