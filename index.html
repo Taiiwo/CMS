@@ -17,8 +17,6 @@
     <!-- Polymer -->
     <link rel="import" href="components/polymer/polymer.html">
     <link rel="import" href="components/app-router/app-router.html">
-    <link rel="import" href="components/paper-toast/paper-toast.html">
-    <link rel="import" href="components/paper-dialog/paper-dialog.html">
   </head>
   <body>
 
@@ -36,8 +34,8 @@
         <app-route path="/my-account" import="pages/my-account.html"></app-route>
     </app-router>
   </body>
-  <paper-toast id="toast"></paper-toast>
-  <paper-dialog id="notification" modal>
-    <div class="buttons"></div>
-  </paper-dialog>
+  <div id="notify-modal" class="modal modal-fixed-footer">
+    <div class="modal-content"></div>
+    <div class="modal-footer"></div>
+  </div>
 </html>
