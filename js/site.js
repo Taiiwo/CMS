@@ -5,10 +5,10 @@ function Site() {
     }
     // Make a call to the api.
     this.api = function(action, data, callback){
-        var baseURL = "";
+        var baseURL = "http://localhost:5000";
         // var baseURL = "http://mwtn.uk/git/coder8/site/";
         $.post(
-            baseURL + "api.py/" + action,
+            baseURL + "/" + action,
             data,
             callback
         );
