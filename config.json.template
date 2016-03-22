@@ -1,0 +1,7 @@
+{
+    "mongo_host": "localhost",
+    "mongo_port": 27017,
+    "mongo_database": "test",
+    "websocket_port": 12345,
+    "websocket_host": "0.0.0.0"
+}

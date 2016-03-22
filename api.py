@@ -1,20 +1,46 @@
-import pymongo
-import hashlib
+import os
+import re
 import json
+import time
+import util
+import hashlib
+import pymongo
+from lib import mongo
+from flask.ext.cors import CORS
+from flask import Flask, request
 from bson.objectid import ObjectId
-from bson import json_util
+from flask.ext.socketio import SocketIO, emit, send
 
-def register(req, user, passw, details=False):
-    details = json.loads(details) if details else False
-    # Get the users collection
-    users = getColl('users')
+app = Flask(__name__)
+CORS(app)
+app.config['SECRET_KEY'] = "Hardcoded Temporary Key"
+socketio = SocketIO(app)
+util = util.Util()
+
+@app.route('/')
+def index():
+    return "index"
+
+# Registers a new user and logs them in
+@app.route("/register", methods=['POST'])
+def register():
+    user = request.form['user']
+    passw = request.form['passw']
+    if "details" in request.form:
+        details = request.form['details']
+        details = json.loads(details)
+    else:
+        details = False
+    # get the users collection
+    users = util.get_collection('users')
     # construct user model
     userData = {
         "user": user,
-        "passw": sha512(user + passw),# This is an effective salt.
-        "details": details
+        "passw": util.sha512(user + passw),   # Effective permanent salt
+        "details": details,
+        "session_salt": False
     }
-    # Make sure user is not already registered
+    # make sure user is not already registered
     if users.find({"user": user}).count() > 0:
         return "userTaken"
     # validate the username and password
@@ -22,53 +48,214 @@ def register(req, user, passw, details=False):
         # insert the user into the database and return their id
         users.insert(userData)
         # log the user in
-        return login(req, user, passw)
+        return login()
     else:
         # Only broken clients will recieve this error
         return "error"
 
-def login(req, user, passw):
+# Logs in a user. Returns their authentication information
+@app.route('/login', methods=['POST'])
+def login():
+    if request.method == "POST":
+        user = request.form['user']
+        passw = request.form['passw']
+    else:
+        return "False"
     # get user collection
-    db = getColl('users')
+    users = util.get_collection('users')
     # find the user in the collection
-    userD = db.find_one({"user": user})
-    if userD and userD['passw'] == sha512(user + passw):
-        userID = str(userD['_id'])
-        passw = userD['passw']
-        del userD['_id']# delete sensitive variables
-        del userD['passw']# ^^^^^^^^^^^^^^^^^^^^^^^^
+    user_data = users.find_one({"user": user})
+    # if the login details match up
+    if user_data and user_data['passw'] == util.sha512(user + passw):
+        # create a salt so the same session key is only valid once
+        session_salt = util.sha512(os.urandom(512))
+        # add the salt to the database so we can verify it later
+        util.update_user(user_data['_id'], {"session_salt": session_salt})
+        # construct a session key from the salt
+        session_key = util.sha512(session_salt + user_data['passw'])
+        userID = str(user_data['_id'])
+        del user_data['_id']# delete sensitive variables
+        del user_data['passw']# ^^^^^^^^^^^^^^^^^^^^^^^^
+        del user_data['session_salt']# ^^^^^^^^^^^^^^^^^
         # User logged in. Gibbe (session) cookies
         return json.dumps({
-            "session": sha512(userID + passw),
+            "session": session_key,
             "userID": userID,
-            "details": userD
+            "details": user_data
         })
     else:
-        return False
+        return "False"
 
 ### Here starts the auth-only functions. Make sure you check their session cookies!
 
+# Changes a user's password
+@app.route('/change_password', methods=['POST'])
+def change_password():
+    if request.method == "POST":
+        userID = request.form['userID']
+        session = request.form['session']
+        passw = request.form['passw']
+        new_passw = request.form['new_passw']
+    else:
+        return False
+    # Make sure the user is legit
+    user = util.auth(userID, session)
+    if user:
+        # check if the old password matches the current password
+        # it should be, but just in case they're cookie stealing
+        if util.sha512(user['user'] + passw) == user['passw']:
+            return util.update_user(
+                userID,
+                {"passw": util.sha512(user['user'] + new_passw)}
+            )
+        else:
+            return "incorrect password"
+    else:
+        return "invalid user"
 
+# Completely deletes a user's account
+@app.route('/delete_account', methods=['POST'])
+def delete_account():
+    user = util.auth_request(request)
+    if user:
+        users = get_collection('users')
+        users.remove({"_id": ObjectId(userID)}, 1)
+    else:
+        return False
+
+# Takes authentication information and returns user info
+@app.route('/authenticate', methods=['POST'])
+def authenticate():
+    user = util.auth_request(request)
+    if user:
+        del user['passw']
+        del user['session_salt']
+        del user['_id']
+        return json.dumps(user)
+
+# Updates users' details property.
+@app.route('/update-user', methods=["POST"])
+def update_user():
+    userID = request.form['userID']
+    session = request.form['session']
+    new_details = request.form['new_details']
+    user = util.auth(userID, session)
+    if user: #   User is authed, do some stuff
+        new_details = json.loads(new_details)
+        update_query = {
+            "details": user['details'].update(new_details)
+        }
+        if util.update_user(user['_id'], update_query):
+            return "success"
+        else:
+            return "error"
+
+# SocketIO handlers that allow limited database access to the front end
+
+# Object that represents a socket connection
+class Socket:
+    def __init__(self, sid, query):
+        self.sid = sid
+        self.query = query
+        self.connected = True
+
+    # Emits data to a socket's unique room
+    def emit(self, event, data):
+        emit(event, data, room=self.sid)
+
+mongo = mongo.MongoConnection()
+live_sockets = {'senders': {}, 'recipients': {}}
+all_listeners = {}
+
+@socketio.on('listen', namespace='/component')
+def listen_handler(data):
+    request_data = json.loads(data)
+    # authenticate the request_data (and get a sneaky recipients list)
+    auth, recipients = util.auth_listen(request_data)
+    if not auth:
+        return False
+    # send the user backlogs if requested
+    if request_data['backlog']:
+        # get previously sent documents
+        senders_log, recipients_log = mongo.get_documents(
+            request_data['sender_pair'][0],
+            recipients,
+            request_data['collection']
+        )
+        for document in senders_log:
+            if document['visible']:
+                document_tidy = {
+                    "sender": document['sender'],
+                    "recipient": document['recipient'],
+                    "data": document['data'],
+                    "ts": document['ts']
+                }
+                emit('data_sent', document_tidy)
+        for document in recipients_log:
+            if document['visible']:
+                document_tidy = {
+                    "sender": document['sender'],
+                    "recipient": document['recipient'],
+                    "data": document['data'],
+                    "ts": document['ts']
+                }
+                emit('data_received', document_tidy)
+    # add socket to dict of sockets to keep updated
+    # (Choosing speed over memory here)
+    # create a socket object to represent us
+    socket = Socket(request.sid, request_data)
+    # add us to a list of all listener sockets
+    live_sockets[socket.sid] = socket
+    # make sure the list exists first
+    if not request_data['sender_pair'][0] in live_sockets['senders']:
+        live_sockets['senders'][request_data['sender_pair'][0]] = []
+    # append us to the list of senders subscribed to changes
+    live_sockets['senders'][request_data['sender_pair'][0]].append(socket)
+    # append us to a list of subscribers for each recipient we're following
+    for recipient in recipients:
+        if not recipient in live_sockets['recipients']:
+            live_sockets['recipients'][recipient] = []
+        live_sockets['recipients'][recipient].append(socket)
+
+@socketio.on('send', namespace='/component')
+def send_handler(data):
+    request = json.loads(data)
+    # validate request
+    if not "sender_pair" in request or not "recipient" in request or \
+            not "collection" in request or not "data" in request:
+        emit('error', "Invalid Arguments")
+        return False
+    sender_pair = request['sender_pair']
+    recipient = request['recipient']
+    collection = request['collection']
+    message = request['data']
+    # store document
+    document = mongo.send(message, sender_pair, recipient, collection)
+    # send Updates
+    document_tidy = {
+        "sender": document['sender'],
+        "recipient": document['recipient'],
+        "data": document['data'],
+        "ts": document['ts']
+    }
+    util.emit_to_relevant_sockets(request, document_tidy, live_sockets)
+
+@socketio.on('disconnect')
+def disconnect():
+    # if socket is listening
+    if request.sid in all_listeners:
+        # remove from listeners
+        all_listeners[request.sid].connected = False
+        del all_listeners[request.sid]
+
+### Here starts the admin-only functions. Make sure you check user['isAdmin']!
+
+
+
+### Here ends the admin-only functions. Make sure you check user['isAdmin']!
 
 ### Here ends the auth-only functions. Make sure you check their session cookies!
 
-
-### Private util functions
-def sha512(string):# shorthand for SHA512-hashing a string
-    return hashlib.sha512(string).hexdigest()
-
-def getColl(name):# Gets a collection from mongo-db
-    client = pymongo.MongoClient('localhost', 27017)
-    db = client.recruitment
-    return db[name]
-
-def auth(userID, session):
-    # get user deets
-    db = getColl('users')
-    # find user in db
-    user = db.find_one({'_id': ObjectId(userID)})
-    # check if the session is legit
-    if user and session == sha512(str(user['_id']) + user['passw']):
-        return True
-    else:
-        return False
+if __name__ == "__main__":
+    # app.run(debug=True)
+    socketio.run(app, debug=True)
