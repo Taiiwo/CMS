@@ -1,0 +1,53 @@
+<dom-module id="taii-input" attributes="label type iid">
+    <template>
+        <div id$="{{iid}}-container"></div>
+    </template>
+</dom-module>
+<script>
+    Polymer({
+        is: "taii-input",
+        attached: function(){
+            var container = $('#' + $(this).attr('iid') + '-container');
+            if ($(this).attr('type') == 'textbox'){
+                container
+                    .addClass('input-field')
+                    .append(
+                        $('<input/>')
+                            .attr('id', $(this).attr('iid'))
+                            .attr('type', 'text')
+                            .addClass('validate')
+                    ,
+                        $('<label/>')
+                            .attr('for', $(this).attr('iid'))
+                            .text($(this).attr('label'))
+                    )
+                ;
+            }
+            else if ($(this).attr('type') == 'textarea'){
+                container
+                    .addClass('input-field')
+                    .append(
+                        $('<textarea/>')
+                            .attr('id', $(this).attr('iid'))
+                            .attr('type', 'text')
+                            .addClass('validate materialize-textarea')
+                    ,
+                        $('<label/>')
+                            .attr('for', $(this).attr('iid'))
+                            .text($(this).attr('label'))
+                    )
+                ;
+            }
+            else if ($(this).attr('type') == 'button'){
+                container
+                    .append(
+                        $('<a/>')
+                            .addClass('btn waves-effect waves-light')
+                            .attr('id', $(this).attr('iid'))
+                            .text($(this).attr('label'))
+                    )
+                ;
+            }
+        }
+    })
+</script>

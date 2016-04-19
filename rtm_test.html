@@ -1,0 +1,43 @@
+<html>
+<head>
+    <script src="js/jquery-2.1.1.min.js"></script>
+    <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+    <script src="js/rtm.js"></script>
+    <script src="js/site.js"></script>
+    <script>
+        site.api(
+            "login",
+            {
+                "user": "Taiiwo",
+                "passw": "ayylmao"
+            },
+            function(data){
+                data = JSON.parse(data);
+                window.userData = data;
+                window.rtm = new RTM(
+                    'http://'+ document.location.hostname +':5000/component'
+                );
+                rtm.listen(
+                    'test',
+                    [data.userID, data.session], [[data.userID, data.session]]
+                );
+                rtm.ws.on('data_received', function(data){
+                    console.log(data);
+                });
+                rtm.ws.on('data_sent', function(data){
+                    console.log(data);
+                });
+                rtm.ws.on('error', function(data){
+                    console.log('error', data);
+                });
+            }
+        );
+        function send(msg){
+            rtm.send(msg, 'test', [userData.userID, userData.session], '56f1af5b0dae4a082cc49c1c');
+        }
+    </script>
+</head>
+<body>
+
+</body>
+</html>

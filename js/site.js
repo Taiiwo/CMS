@@ -5,8 +5,7 @@ function Site() {
     }
     // Make a call to the api.
     this.api = function(action, data, callback){
-        var baseURL = "http://localhost:5000";
-        // var baseURL = "http://mwtn.uk/git/coder8/site/";
+        var baseURL = "http://"+ document.location.hostname +":5000";
         $.post(
             baseURL + "/" + action,
             data,
@@ -25,7 +24,7 @@ function Site() {
     this.userAuthed = function(){
         // this is not totally secure, but it's impossible to make authenitcated
         // requests without a valid session token
-        if ($.cookie('session') == undefined){
+        if (Cookies.get('session') == undefined){
             return false;
         }
         else {
@@ -72,5 +71,85 @@ function Site() {
             this.modal_open = true;
         }
     }
+    this.auth = function(id, session, callback){
+        this.api(
+            'authenticate',
+            {
+                userID: id,
+                session, session
+            },
+            callback
+        );
+        $(window).trigger('auth_changed');
+    }
+    // Adds callback to the end of the JS execution flow. Useful for running
+    // parallel to ayncronous code with no callback
+    this.append_stack = function(callback, num){
+        if (typeof num != 'undefined' && num > 0){
+            this.append_stack(function(){
+                setTimeout(callback, 0);
+            }, num - 1);
+        }
+        else {
+            setTimeout(callback, 0);
+        }
+    }
+    this.login = function(user, passw, success, fail){
+        site.api(
+            "login",
+            {
+                user: user,
+                passw: passw
+            },
+            function(data) {
+                // if the login was successful
+                if (data != "0"){
+                    // parse the user data
+                    data = JSON.parse(data);
+                    // set the session cookies
+                    Cookies.set('session', data['session']);
+                    Cookies.set('userID', data['userID']);
+                    // set a global variable for the users details
+                    window.user_data = data.details;
+                    // notify the user that the login was successful.
+                    site.toast('Login Successful!');
+                    // forward the user to the homepage
+                    site.route('/');
+                    if (typeof success != 'undefined'){
+                        success();
+                    }
+                    $(window).trigger('auth_changed');
+                }
+                else {
+                    // whoops, wrong username or password
+                    site.toast("Invalid Login.");
+                    if (typeof fail != 'undefined'){
+                        fail();
+                    }
+                }
+            }
+        );
+    }
+    this.logout = function(){
+        Cookies.remove('session');
+        Cookies.remove('userID');
+        user_data = undefined;
+        $(window).trigger('auth_changed');
+        site.toast('Logged out.');
+    }
 }
-var site = new Site()
+window.$$ = document.querySelector;
+var site = new Site();
+if (Cookies.get('session') && Cookies.get('userID')){
+    // user has cookies, auth them
+    site.auth(Cookies.get('userID'), Cookies.get('session'), function(data){
+        if (data != "0"){
+            window.user_data = JSON.parse(data);
+        }
+        else {
+            site.toast("Session Expired");
+            Cookies.remove('session');
+            Cookies.remove('userID');
+        }
+    });
+}

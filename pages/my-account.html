@@ -40,16 +40,16 @@ features on this page to edit key details about your account.
         attached: function() {
             // markup markdown
             site.markdown('#md');
-            
+
             // check for auth
-            if ($.cookie('session') == undefined){
+            if (Cookies.get('session') == undefined){
                 // user is not logged in, send them to login
                 site.route('/login');
                 var userAuthed = false;
             }
             else {
                 var userAuthed = true;
-                var session = $.cookie('session');
+                var session = Cookies.get('session');
             }
             if (userAuthed){
                 $('#delete').click(function(){

@@ -44,34 +44,7 @@
                 site.route('/');
             }
             $('#login').click(function(){
-                site.api(
-                    "login",
-                    {
-                        user: $('#user').val(),
-                        passw: $('#passw').val()
-                    },
-                    function(data) {
-                        // if the login was successful
-                        if (data != "False"){
-                            // parse the user data
-                            data = JSON.parse(data);
-                            // set the session cookies
-                            $.cookie('session', data['session']);
-                            $.cookie('userID', data['userID']);
-                            $.cookie('userName', data['details']['user']);
-                            // set a global variable for the users details
-                            window.authUser = data.details;
-                            // notify the user that the login was successful.
-                            site.toast('Login Successful!');
-                            // forward the user to the homepage
-                            site.route('/');
-                        }
-                        else {
-                            // whoops, wrong username or password
-                            site.toast("Invalid Login.");
-                        }
-                    }
-                );
+                site.login($('#user').val(), $('#passw').val());
             });
         }
     });

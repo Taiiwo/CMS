@@ -38,7 +38,7 @@ def register():
         'details': details,
         'session_salt': False,
         'is_datachest': False,
-        'datachests': [['public', util.sha512('')]]   # add public session
+        'datachests': {'public': ['public', util.sha512('')]}   # add public session
     }
     # make sure user is not already registered
     if users.find({'user': user}).count() > 0:
@@ -85,7 +85,7 @@ def login():
             'details': user_data
         })
     else:
-        return 'False'
+        return '0'
 
 ### Here starts the auth-only functions. Make sure you check their session cookies!
 
@@ -120,7 +120,7 @@ def delete_account():
         users = get_collection('users', db=util.config['auth_db'])
         users.remove({'_id': ObjectId(userID)}, 1)
     else:
-        return False
+        return "0"
 
 # Takes authentication information and returns user info
 @app.route('/authenticate', methods=['POST'])
@@ -131,12 +131,13 @@ def authenticate():
         del user['session_salt']
         del user['_id']
         return json.dumps(user)
+    return "0"
 
 # converts a user/group name into an id
 @app.route('/get-uid', methods=['POST'])
 def get_uid():
     if not 'user' in request:
-        return False
+        return "0"
     users = util.get_collection('users', db=util.config['auth_db'])
     user = users.find({'user': request['user']})
     return str(user['_id'])
@@ -168,6 +169,12 @@ class Socket:
         self.sid = sid
         self.query = query
         self.connected = True
+        self.recipient_sender = query['recipient_sender'] \
+                if 'recipient_sender' in query else False
+        self.where_recipient = query['where_recipient']\
+                if 'where_recipient' in query else False,
+        self.where_sender = query['where_sender']\
+                if 'where_sender' in query else False
 
     # Emits data to a socket's unique room
     def emit(self, event, data):
@@ -179,28 +186,83 @@ all_listeners = {}
 @socketio.on('listen', namespace='/component')
 def listen_handler(data):
     request_data = json.loads(data)
+    if not util.keys_exist([
+                'backlog', 'sender_pair', 'collection', 'recipient_pairs'
+            ], request_data) or \
+            len(request_data['sender_pair']) != 2:
+        emit('error', 'Invalid params')
+        return "0"
+    # convert usernames to ids if requested
+    recipientID_type = request_data['recipientID_type'] if "recipientID_type"\
+            in request_data else 'id'
+    if recipientID_type == "username":
+        # convert recipient usernames to ids
+        users = util.get_collection('users', db=util.config['auth_db'])
+        for pair in request_data['recipient_pairs']:
+            recipient = users.find_one({'user': pair[0]})
+            if len(recipient) > 0:
+                pair[0] = str(recipient['_id'])
+            else:
+                emit('error', 'Recipient username not found')
+                return "0"
+    senderID_type = request_data['senderID_type'] if "senderID_type" \
+            in request_data else 'id'
+    # send the user backlogs if requested
+    if senderID_type == "username":
+        # convert sender usernames to ids
+        users = util.get_collection('users', db=util.config['auth_db'])
+        sender = users.find_one({'user': request_data['sender_pair'][0]})
+        if len(sender) > 0:
+            request_data['sender_pair'][0] = str(recipient['_id'])
+        else:
+            emit('error', 'Sender username not found')
+            return "0"
+    recipient_senders = []
+    if 'recipient_senders' in request_data:
+        for sender in request_data['recipient_senders']:
+            recipient_senders.append(
+                str(users.find_one({'user': sender})['_id'])
+            )
+        request_data['recipient_senders'] = recipient_senders
     # authenticate the request_data (and get a sneaky recipients list)
     auth, recipients = util.auth_listen(request_data)
     if not auth:
-        return False
+        return "0"
+    # replace id searches with object id searches
+    if 'where_sender' in request_data:
+        for clause in request_data['where_sender']:
+            if clause == '_id':
+                request_data['where_sender'][clause] = ObjectId(
+                    request_data['where_sender'][clause]
+                )
+    if 'where_recipient' in request_data:
+        for clause in request_data['where_recipient']:
+            if clause == '_id':
+                request_data['where_recipient'][clause] = ObjectId(
+                    request_data['where_recipient'][clause]
+                )
     # send the user backlogs if requested
-    if request_data['backlog']:
+    if 'backlog' in request_data and request_data['backlog']:
         # get previously sent documents
         senders_log, recipients_log = util.get_documents(
             request_data['sender_pair'][0],
             recipients,
             request_data['collection'],
             time_order=True,
-            recipient_sender=False if 'recipient_sender' not in request \
-                else request['recipient_sender']
+            recipient_senders=recipient_senders if recipient_senders else False,
+            recipientID_type=recipientID_type,
+            where_recipient=request_data['where_recipient']\
+                    if 'where_recipient' in request_data else False,
+            where_sender=request_data['where_sender']\
+                    if 'where_sender' in request_data else False
         )
-
         for document in senders_log:
             if document['visible']:
                 document_tidy = {
                     'sender': document['sender'],
                     'recipient': document['recipient'],
                     'data': document['data'],
+                    'id': str(document['_id']),
                     'ts': document['ts']
                 }
                 emit('data_sent', document_tidy)
@@ -210,6 +272,7 @@ def listen_handler(data):
                     'sender': document['sender'],
                     'recipient': document['recipient'],
                     'data': document['data'],
+                    'id': str(document['_id']),
                     'ts': document['ts']
                 }
                 emit('data_received', document_tidy)
@@ -242,16 +305,34 @@ def send_handler(data):
     recipient = request['recipient']
     collection = request['collection']
     message = request['data']
+    if 'senderID_type' in request and request['senderID_type'] == 'username':
+        users = util.get_collection('users', db=util.config['auth_db'])
+        user = users.find_one({'user': sender_pair[0]})
+        if user:
+            sender_pair[0] = str(user['_id'])
+        else:
+            emit('error', 'Sender username does not exist')
+            return False
+    if 'recipientID_type' in request and request['recipientID_type'] == \
+            'username':
+        users = util.get_collection('users', db=util.config['auth_db'])
+        user = users.find_one({'user': recipient})
+        if user:
+            recipient = str(user['_id'])
+            request['recipient'] = recipient
+        else:
+            emit('error', 'Recipient username does not exist')
+            return False
     # store document
     document = util.send(message, sender_pair, recipient, collection)
     if not document:
-        emit('error', 'Invalid sender authentication')
         return False
     # send Updates
     document_tidy = {
         'sender': document['sender'],
         'recipient': document['recipient'],
         'data': document['data'],
+        'id': str(document['_id']),
         'ts': document['ts']
     }
     if not util.emit_to_relevant_sockets(request, document_tidy, live_sockets):

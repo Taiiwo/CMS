@@ -1,4 +1,3 @@
-<link rel="import" href="../components/eric/eric-projects.html">
 <dom-module id="home-page">
     <template>
         <style>
@@ -97,23 +96,6 @@ contains all of the wrapping for TaiiCMS's Python API.
         attached: function() {
             // markup the markdown
             site.markdown('#headContent');
-            
-            // check if we have a session cookie
-            if ($.cookie('session') == undefined){
-                // user is not logged in, send them to login
-                //site.route('/login');
-                var userAuthed = false;
-            }
-            else {
-                var userAuthed = true;
-            }
-            if (userAuthed){
-                // if user is authed, show their name and logout button
-                site.navbar_mode('authed');
-            }
-            else {
-                site.navbar_mode('unauthed');
-            }
         }
     });
 </script>

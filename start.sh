@@ -5,8 +5,10 @@
 # It's insecure and quite slow. It's reccommended that you serve these scripts
 # separately by configuring a production webserver like Apache or nGinX.
 
+trap "kill %1" SIGINT
+
 # start the webserver
 python3 webserver.py &
 
 # start the flask debugger
-python2 api.py
+python3 api.py

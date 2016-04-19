@@ -1,0 +1,53 @@
+<dom-module id="publish-page">
+    <template>
+        <style>
+            /**/
+        </style>
+        <div class="container">
+            <form id="article">
+                <div class="row">
+                    <taii-input type="textbox" iid="title" label="Title" class="col s6">
+                    </taii-input>
+                    <taii-input type="textbox" iid="image" label="Image URL" class="col s6">
+                    </taii-input>
+                </div>
+                <taii-input type="textarea" iid="content" label="Content">
+                </taii-input>
+                <taii-input type="button" iid="post" label="Post Article">
+                </taii-input>
+            </form>
+        </div>
+    </template>
+</dom-module>
+<script>
+    Polymer({
+        is: "publish-page",
+        attached: function() {
+            if (typeof user_data == 'undefined'){
+                site.toast('Not logged in!');
+                site.route('/login');
+                return false;
+            }
+            var publish = function(post){
+                rtm.send({
+                    collection: 'posts',
+                    senderID_type: 'username',
+                    recipientID_type: 'username',
+                    sender_pair: user_data.datachests['Posts'],
+                    recipient: "Public",
+                    data: post
+                });
+            }
+            site.append_stack(function(){
+                $('#post').click(function(){
+                    var post = {
+                        title: $('#title').val(),
+                        content: $('#content').val(),
+                        image: $('#image').val()
+                    }
+                    publish(post);
+                });
+            }, 0);
+        }
+    });
+</script>

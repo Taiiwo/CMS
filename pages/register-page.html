@@ -1,4 +1,3 @@
-<link rel="import" href="../components/eric/skill-slider.html" />
 <dom-module id="register-page">
     <template>
         <style>
@@ -58,9 +57,9 @@
                             // parse the user data
                             data = JSON.parse(data);
                             // set the session cookies
-                            $.cookie('session', data['session']);
-                            $.cookie('userID', data['userID']);
-                            $.cookie('userName', data['details']['user']);
+                            Cookies.set('session', data['session']);
+                            Cookies.set('userID', data['userID']);
+                            Cookies.set('userName', data['details']['user']);
                             // set a global variable for the users details
                             window.authUser = data.details;
                             // notify the user that the login was successful.
