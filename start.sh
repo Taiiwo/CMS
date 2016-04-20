@@ -7,8 +7,4 @@
 
 trap "kill %1" SIGINT
 
-# start the webserver
-python3 webserver.py &
-
-# start the flask debugger
-python3 api.py
+python3 run.py

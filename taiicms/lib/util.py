@@ -6,17 +6,17 @@ import hashlib
 from bson.objectid import ObjectId
 
 class Util:
-    def __init__(self):
-        # Read config
-        self.config = json.load(open('config.json', 'r'))
+    def __init__(self, config):
+        self.config = config
+
         # Connect to MongoDB
         self.connect()
         self.db = self.mongo[self.config['default_db']]
 
     def connect(self):
         self.mongo = pymongo.MongoClient(
-            self.config['mongo_host'],
-            self.config['mongo_port']
+            self.config['host'],
+            self.config['port']
         )
 
     # Shorthand for sha512 sum

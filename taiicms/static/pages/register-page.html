@@ -12,22 +12,24 @@
         <div class="register-div">
         <div class="container">
             <h2>Sign Up</h2>
-            <div class="row">
-                <div class="input-field col s6">
-                    <input value="" id="user" type="text" class="validate" pattern="\w{1,140}">
-                    <label class="active" for="user" data-error="Too long!">Username</label>
-                </div>
-            </div>
-            <div class="row">
-                <div class="input-field col s6">
-                    <input value="" id="passw" type="password" class="validate"  pattern=".{6,140}">
-                    <label data-error="Too short!" class="active" for="passw">Password</label>
-                </div>
-            </div>
-            <button id="register" class="btn waves-effect waves-light" type="submit" name="action">
-                Submit
-                <i class="material-icons right">send</i>
-            </button>
+            <form id="signup-form" action="/api/1/register" method="POST">
+              <div class="row">
+                  <div class="input-field col s6">
+                      <input value="" name="user" id="user" type="text" class="validate" pattern="\w{1,140}">
+                      <label class="active" for="user" data-error="Too long!">Username</label>
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="input-field col s6">
+                      <input value="" name="passw" id="passw" type="password" class="validate"  pattern=".{6,140}">
+                      <label data-error="Too short!" class="active" for="passw">Password</label>
+                  </div>
+              </div>
+              <button id="register" class="btn waves-effect waves-light" type="submit" name="action">
+                  Submit
+                  <i class="material-icons right">send</i>
+              </button>
+            </form>
     </div>
     </template>
 </dom-module>
@@ -36,15 +38,10 @@
         is: "register-page",
         attached: function() {
             var baseUrl = "";
-            $('#register').click(function(){
+            $('#signup-form').submit(function(){
                 site.api(
                     'register',
-                    {
-                        user: $('#user').val(),
-                        passw: $('#passw').val()
-                        // if you need to add more user information, place it here
-                        // details: false
-                    },
+                    $("#signup-form").serialize(),
                     function(data) {
                         if (data == 'userTaken'){
                             site.toast('Sorry, username taken.');
@@ -69,6 +66,7 @@
                         }
                     }
                 );
+            return false;
             });
         }
     });
