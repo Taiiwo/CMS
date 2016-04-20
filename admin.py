@@ -90,3 +90,11 @@ if command == "datachest":
                 }
             })
             quit("[-] User added to datachest")
+
+if command == "install-plugins":
+    # recursively walk plugins directory
+    # if plugin hasn't been added
+        # add components.html to be imported
+        # create specified datachests in datachests.json
+        # add main.py.daily() to the daily cron job
+        # add main.py.auth_*() to the authentication api
