@@ -13,22 +13,24 @@
         <div class="container">
             <h2>Login</h2>
             <p>Click to <a id="registerLink">Register</a></p>
-            <div class="row">
-                <div class="input-field col s6">
-                    <input value="" id="user" type="text" class="validate" pattern="\w{1,140}">
-                    <label class="active" for="user" data-error="Too long!">Username</label>
-                </div>
-            </div>
-            <div class="row">
-                <div class="input-field col s6">
-                    <input value="" id="passw" type="password" class="validate"  pattern=".{6,140}">
-                    <label data-error="Too short!" class="active" for="passw">Password</label>
-                </div>
-            </div>
-            <button id="login" class="btn waves-effect waves-light" type="submit" name="action">
-                Login
-                <i class="material-icons right">send</i>
-            </button>
+            <form id="login-form" action="/api/1/register">
+              <div class="row">
+                  <div class="input-field col s6">
+                      <input value="" id="user" type="text" class="validate" pattern="\w{1,140}">
+                      <label class="active" for="user" data-error="Too long!">Username</label>
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="input-field col s6">
+                      <input value="" id="passw" type="password" class="validate"  pattern=".{6,140}">
+                      <label data-error="Too short!" class="active" for="passw">Password</label>
+                  </div>
+              </div>
+              <button id="login" class="btn waves-effect waves-light" type="submit" name="action">
+                  Login
+                  <i class="material-icons right">send</i>
+              </button>
+            </form>
         </div>
     </template>
 </dom-module>
@@ -43,8 +45,9 @@
                 // already logged in, you don't need to be here
                 site.route('/');
             }
-            $('#login').click(function(){
+            $('#login-form').submit(function(){
                 site.login($('#user').val(), $('#passw').val());
+                return false;
             });
         }
     });
