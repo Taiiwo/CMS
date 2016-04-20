@@ -3,24 +3,19 @@ import re
 import json
 import time
 import hashlib
-from lib import util
+from .lib import util
 from flask.ext.cors import CORS
-from flask import Flask, request
+from flask import request
 from bson.objectid import ObjectId
-from flask.ext.socketio import SocketIO, emit, send
+from flask.ext.socketio import emit, send
 
-app = Flask(__name__)
+from . import app, socketio, config
+
 CORS(app)
-app.config['SECRET_KEY'] = 'Hardcoded Temporary Key'
-socketio = SocketIO(app)
-util = util.Util()
-
-@app.route('/')
-def index():
-    return 'index'
+util = util.Util(config["mongo"])
 
 # Registers a new user and logs them in
-@app.route('/register', methods=['POST'])
+@app.route('/api/1/register', methods=['POST'])
 def register():
     user = request.form['user']
     passw = request.form['passw']
@@ -54,7 +49,7 @@ def register():
         return 'error'
 
 # Logs in a user. Returns their authentication information
-@app.route('/login', methods=['POST'])
+@app.route('/api/1/login', methods=['POST'])
 def login():
     user = request.form['user']
     passw = request.form['passw']
@@ -90,7 +85,7 @@ def login():
 ### Here starts the auth-only functions. Make sure you check their session cookies!
 
 # Changes a user's password
-@app.route('/change_password', methods=['POST'])
+@app.route('/api/1/change_password', methods=['POST'])
 def change_password():
     if request.method == 'POST':
         passw = request.form['passw']
@@ -113,7 +108,7 @@ def change_password():
         return 'invalid user'
 
 # Completely deletes a user's account
-@app.route('/delete_account', methods=['POST'])
+@app.route('/api/1/delete_account', methods=['POST'])
 def delete_account():
     user = util.auth_request(request)
     if user:
@@ -123,7 +118,7 @@ def delete_account():
         return "0"
 
 # Takes authentication information and returns user info
-@app.route('/authenticate', methods=['POST'])
+@app.route('/api/1/authenticate', methods=['POST'])
 def authenticate():
     user = util.auth_request(request)
     if user:
@@ -134,7 +129,7 @@ def authenticate():
     return "0"
 
 # converts a user/group name into an id
-@app.route('/get-uid', methods=['POST'])
+@app.route('/api/1/get-uid', methods=['POST'])
 def get_uid():
     if not 'user' in request:
         return "0"
@@ -143,7 +138,7 @@ def get_uid():
     return str(user['_id'])
 
 # Updates users' details property.
-@app.route('/update-user', methods=['POST'])
+@app.route('/api/1/update-user', methods=['POST'])
 def update_user():
     userID = request.form['userID']
     session = request.form['session']
