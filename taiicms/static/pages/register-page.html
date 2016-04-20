@@ -39,8 +39,8 @@
         attached: function() {
             var baseUrl = "";
             $('#signup-form').submit(function(){
-                $.post(
-                    '/api/1/register',
+                site.api(
+                    'register',
                     $("#signup-form").serialize(),
                     function(data) {
                         if (data == 'userTaken'){

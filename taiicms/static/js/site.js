@@ -5,9 +5,9 @@ function Site() {
     }
     // Make a call to the api.
     this.api = function(action, data, callback){
-        var baseURL = "http://"+ document.location.hostname +":5000";
+        var baseURL = document.location.origin + "/api/1/";
         $.post(
-            baseURL + "/" + action,
+            baseURL + action,
             data,
             callback
         );
@@ -95,7 +95,7 @@ function Site() {
         }
     }
     this.login = function(user, passw, success, fail){
-        site.api(
+        this.api(
             "login",
             {
                 user: user,
