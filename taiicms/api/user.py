@@ -3,13 +3,13 @@ import re
 import json
 import time
 import hashlib
-from .lib import util
 from flask.ext.cors import CORS
 from flask import request
 from bson.objectid import ObjectId
 from flask.ext.socketio import emit, send
 
-from . import app, socketio, config
+from .. import app, socketio, config
+from ..lib import util
 
 CORS(app)
 util = util.Util(config["mongo"])
