@@ -1,8 +1,11 @@
+#!/bin/env python3
 import os
 import sys
-from lib import util
+import json
+from taiicms.lib import util
+from taiicms import config
 
-util = util.Util()
+util = util.Util(config['mongo'])
 
 command = sub_command = False
 arg = []
@@ -91,10 +94,36 @@ if command == "datachest":
             })
             quit("[-] User added to datachest")
 
-if command == "install-plugins":
-    # recursively walk plugins directory
-    # if plugin hasn't been added
-        # add components.html to be imported
-        # create specified datachests in datachests.json
-        # add main.py.daily() to the daily cron job
-        # add main.py.auth_*() to the authentication api
+if command == "plugins":
+    if sub_command == "install":
+        # grab the top level of dirs in the plugins directory
+        cwd = os.path.dirname(os.path.realpath(__file__))
+        plugin_dir = cwd + '/taiicms/static/plugins/'
+        for plugin in next(os.walk(plugin_dir))[1]:
+            location = plugin_dir + plugin
+            # build component import element
+            html_import = util.generate_import_html(plugin)
+            # if plugin not in plugin-components.html
+            plugin_components = \
+                    "/taiicms/static/components/plugin-components.html"
+            if not html_import in open(cwd + plugin_components).read():
+                # add components.html to be imported
+                open(cwd + plugin_components, 'a').write(html_import)
+                # create specified datachests in datachests.json
+                if os.path.isfile(location + "/datachests.json"):
+                    for chest in json.load(open(location + "/datachests.json")):
+                        util.new_datachest(chest['name'], chest['public'])
+                # add main.py.daily() to the daily cron job
+                # add main.py.auth_*() to the authentication api
+
+    if sub_command == "remove":
+        if len(arg) < 1:
+            quit("[E] Requires one argument: Plugin to remove")
+        plugin = arg[0]
+        html_import = util.generate_import_html(plugin)
+        plugin_components = \
+                "/taiicms/static/components/plugin-components.html"
+        cwd = os.path.dirname(os.path.realpath(__file__))
+        read = open(cwd + plugin_components).read()
+        write = read.replace(html_import, "")
+        open(cwd + plugin_components, 'w').write(write)

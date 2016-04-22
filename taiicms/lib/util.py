@@ -213,3 +213,11 @@ class Util:
             if key not in dicti:
                 return False
         return True
+
+    def generate_import_html(self, plugin_name):
+        return '<!-- %s -->\n' % plugin_name + \
+            '<link ' + \
+            'rel="import" ' + \
+            'href="../plugins/%s/components.html"' % plugin_name + \
+            ' />\n' + \
+            '<!-- /%s -->\n' % plugin_name
