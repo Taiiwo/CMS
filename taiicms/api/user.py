@@ -3,16 +3,28 @@ import re
 import json
 import time
 import hashlib
-from .lib import util
 from flask.ext.cors import CORS
-from flask import request
+from flask import request, jsonify
 from bson.objectid import ObjectId
 from flask.ext.socketio import emit, send
 
-from . import app, socketio, config
+from .. import app, socketio, config
+from ..lib import util
 
 CORS(app)
 util = util.Util(config["mongo"])
+
+
+def get_safe_user(user):
+    if isinstance(user, dict):
+        safe_user = {}
+        for key in ["user", "details", "is_datachest", "datachests"]:
+            safe_user[key] = user[key]
+        return safe_user
+    else:
+        user = util.get_collection("users", db=util.config["auth_db"]).find_one({"user": user})
+        return user
+
 
 # Registers a new user and logs them in
 @app.route('/api/1/register', methods=['POST'])
@@ -70,11 +82,8 @@ def login():
             # construct a session key from the salt
             session_key = util.sha512(session_salt + user_data['passw'])
         userID = str(user_data['_id'])
-        del user_data['_id']# delete sensitive variables
-        del user_data['passw']# ^^^^^^^^^^^^^^^^^^^^^^^^
-        del user_data['session_salt']# ^^^^^^^^^^^^^^^^^
-        # User logged in. Gibbe (session) cookies
-        return json.dumps({
+        user_data = get_safe_user(user_data)
+        return jsonify({
             'session': session_key,
             'userID': userID,
             'details': user_data
@@ -122,10 +131,8 @@ def delete_account():
 def authenticate():
     user = util.auth_request(request)
     if user:
-        del user['passw']
-        del user['session_salt']
-        del user['_id']
-        return json.dumps(user)
+        user = get_safe_user(user)
+        return jsonify(user)
     return "0"
 
 # converts a user/group name into an id
