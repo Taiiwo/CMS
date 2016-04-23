@@ -4,7 +4,7 @@ from os import urandom
 
 from . import app
 
-CONFIG_PATH = "./config.json"
+DEFAULT_CONFIG_PATH = "./config.json"
 
 default_config = {
     "secret_key": b2a_hex(urandom(32)).decode("utf8"),
@@ -12,6 +12,8 @@ default_config = {
     "bind_addr": "0.0.0.0",
 
     "debug": False,
+
+    "plugins": {},
 
     "mongo": {
         "host": "localhost",
@@ -36,20 +38,28 @@ def merge_dicts(a, b):
 
     return new_dict
 
+
+def save_config(file_path=DEFAULT_CONFIG_PATH, config_dict=None):
+    if config_dict is None:
+        config_dict = config
+    
+    json.dump(
+        config_dict,
+        open(file_path, "w"),
+        sort_keys = True,
+        indent = 2,
+        separators = (',', ': ')
+    )
+
+
 try:
-    loaded_config = json.load(open(CONFIG_PATH))
+    loaded_config = json.load(open(DEFAULT_CONFIG_PATH))
     config = merge_dicts(default_config, loaded_config)
 except IOError:
     print("Config file not found. Loading defaults...")
     print("You should probably edit the config file with your settings.")
     config = default_config
 
-json.dump(
-    config,
-    open(CONFIG_PATH, "w"),
-    sort_keys = True,
-    indent = 2,
-    separators = (',', ': ')
-)
+save_config()
 
 app.secret_key = config["secret_key"]
