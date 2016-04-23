@@ -36,7 +36,7 @@ def make_error(error_name, extra_detail=None):
 
 def make_error_response(*args, **kwargs):
     error_res = make_error(*args, **kwargs)
-    res = make_response(jsonify(error_res), 400)
+    res = make_response(jsonify(error_res), 200)
     return res
 
 

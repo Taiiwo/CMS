@@ -45,7 +45,7 @@ def gen_salt(as_hex=True):
 
 
 def check_password(user_data, password):
-    pass_salt = a2b_hex(user_data["passhash"])
+    pass_salt = a2b_hex(user_data["salt"])
     passhash = hash_password(password, pass_salt)
     return passhash == user_data["passhash"]
 
@@ -99,6 +99,24 @@ def create_session(user_data):
     return session_key
 
 
+def authenticate(user_id=None, session=None):
+    if user_id is None or session is None:
+        try:
+            user_id = request.cookies["user_id"]
+            session = request.cookies["session"]
+        except KeyError:
+            return None
+
+    user_data = users.find_one({'_id': ObjectId(user_id)})
+
+    # check if the session is legit
+    if not user_data:
+        return None
+    if not session == hash_password(user_data["passhash"], user_data["session_salt"]):
+        return None
+    return user_data
+
+
 # Registers a new user and logs them in
 @app.route("/api/1/register", methods=["POST"])
 def api_register():
@@ -135,12 +153,12 @@ def api_register():
         return make_error_response("username_taken")
 
     # user created, log the user in
-    return login()
+    return api_login()
 
 
 # Logs in a user. Returns their authentication information
 @app.route("/api/1/login", methods=["POST"])
-def login():
+def api_login():
     try:
         username = request.form["username"]
         password = request.form["password"]
@@ -153,7 +171,7 @@ def login():
         return make_error_response("login_invalid")
 
     # check their password
-    if check_password(user_data, password):
+    if not check_password(user_data, password):
         return make_error_response("login_invalid")
 
     # don"t create dynamic session keys for datachests
@@ -162,9 +180,9 @@ def login():
 
     user_id = str(user_data["_id"])
     user_data = get_safe_user(user_data)
-    return jsonify({
+    return make_success_response({
         "session": session_key,
-        "userID": user_id,
+        "user_id": user_id,
         "details": user_data
     })
 
@@ -175,7 +193,7 @@ def login():
 
 
 @app.route("/api/1/change_password", methods=["POST"])
-def change_password():
+def api_change_password():
     """Changes a user"s password."""
     try:
         cur_password = request.form["cur_password"]
@@ -184,22 +202,22 @@ def change_password():
         return make_error_response("data_required", e.args)
 
     # Make sure the user is logged in
-    user_data = util.auth_request(request)
+    user_data = authenticate()
     if not user_data:
         return make_error_response("login_required")
 
     # check if the old password matches the current password
     # it should be, but just in case they're cookie stealing
-    if not check_password(user, cur_password):
+    if not check_password(user_data, cur_password):
         return make_error_response("password_incorrect")
 
     # update the user
-    salt = get_hash()
+    salt = gen_salt(as_hex=False)
     salt_hex = b2a_hex(salt)
     passhash = hash_password(new_password, salt)
 
     util.update_user(
-        userID,
+        user_data["_id"],
         {
             "$set": {
                 "salt": salt_hex,
@@ -215,24 +233,24 @@ def change_password():
 
 # Completely deletes a user"s account
 @app.route("/api/1/delete_account", methods=["POST"])
-def delete_account():
-    user_data = util.auth_request(request)
+def api_delete_account():
+    user_data = authenticate()
     if not user_data:
         return make_error_response("login_required")
 
-    users.delete_one({"_id": ObjectId(userID)})
+    users.delete_one({"_id": ObjectId(user_data["_id"])})
     return make_success_response({"message": "T^T"})
 
 
 # Takes authentication information and returns user info
-@app.route("/api/1/authenticate", methods=["GET"])
-def authenticate():
-    user_data = util.auth_request(request)
+@app.route("/api/1/authenticate", methods=["POST"])
+def api_authenticate():
+    user_data = authenticate()
     if not user_data:
         return make_error_response("login_required")
 
-    safe_user_data = get_safe_user(user)
-    return make_success_response({"user": user})
+    safe_user_data = get_safe_user(user_data)
+    return make_success_response({"user_data": safe_user_data})
 
 
 # converts a user/group name into an id
@@ -258,7 +276,7 @@ def update_user():
     except KeyError as e:
         return make_error_response("missing_data", e.args)
 
-    user_data = util.auth_request(request)
+    user_data = authenticate()
     if not user_data:
         return make_error_response("login_required")
 

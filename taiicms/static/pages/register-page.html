@@ -15,14 +15,14 @@
             <form id="signup-form" action="/api/1/register" method="POST">
               <div class="row">
                   <div class="input-field col s6">
-                      <input value="" name="user" id="user" type="text" class="validate" pattern="\w{1,140}">
-                      <label class="active" for="user" data-error="Too long!">Username</label>
+                      <input value="" name="username" id="username" type="text" class="validate" pattern="\w{1,140}">
+                      <label class="active" for="username" data-error="Too long!">Username</label>
                   </div>
               </div>
               <div class="row">
                   <div class="input-field col s6">
-                      <input value="" name="passw" id="passw" type="password" class="validate"  pattern=".{6,140}">
-                      <label data-error="Too short!" class="active" for="passw">Password</label>
+                      <input value="" name="password" id="passw" type="password" class="validate"  pattern=".{6,140}">
+                      <label data-error="Too short!" class="active" for="password">Password</label>
                   </div>
               </div>
               <button id="register" class="btn waves-effect waves-light" type="submit" name="action">
@@ -43,27 +43,28 @@
                     'register',
                     $("#signup-form").serialize(),
                     function(data) {
-                        if (data == 'userTaken'){
-                            site.toast('Sorry, username taken.');
-                        }
-                        else if (data == 'error' || data == 'False') {
-                            site.toast('Unexpected error');
-                        }
-                        else {
+                        if (data.success) {
                             site.toast('Registration Successful!');
                             // set the session cookies
                             Cookies.set('session', data['session']);
-                            Cookies.set('userID', data['userID']);
+                            Cookies.set('user_id', data['user_id']);
                             // set a global variable for the users details
                             window.user_data = data.details;
                             // notify the user that the login was successful.
                             site.toast('Login Successful!');
                             // forward the user to the homepage
                             site.route('/');
+                        } else {
+                            err = data.errors[0]
+                            if (err.error_name == "username_taken") {
+                                site.toast('Sorry, that username is taken.');
+                            } else {
+                                site.toast('Unexpected error');
+                            }
                         }
                     }
                 );
-            return false;
+                return false;
             });
         }
     });

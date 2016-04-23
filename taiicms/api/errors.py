@@ -21,7 +21,7 @@ error_codes = {
     },
     4: {
         "name": "username_taken",
-        "details": "The username request has been taken.",
+        "details": "The username has been taken.",
         "status_code": 400
     },
     5: {
@@ -36,7 +36,7 @@ error_codes = {
     },
     7: {
         "name": "password_incorrect",
-        "details": "A field contained invalid data.",
+        "details": "Password given was incorrect.",
         "status_code": 400
     },
     8: {
