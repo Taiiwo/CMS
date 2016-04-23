@@ -13,23 +13,29 @@
 Welcome to your account settings. Only you can see this page. You can use the
 features on this page to edit key details about your account.
             </div>
-            <div class="row"><div class="col s12">
-                <div class="input-field col s3">
-                    <input id="password" type="text" class="validate">
-                    <label for="password">Current Password</label>
+            <form id="chpass_form" action="#">
+                <div class="row">
+                    <div class="col s12">
+                        <div class="input-field col s3">
+                            <input id="cur_password" name="cur_password" type="password" class="validate">
+                            <label for="cur_password">Current Password</label>
+                        </div>
+                        <div class="input-field col s3">
+                            <input id="new_password_a" name="new_password" type="password" class="validate">
+                            <label for="new_password_a">New Password</label>
+                        </div>
+                        <div class="input-field col s3">
+                            <input id="new_password_b" type="password" class="validate">
+                            <label for="new_password_b">Confirm New Password</label>
+                        </div>
+                        <div class="col s3">
+                            <button class="waves-effect waves-light btn" type="submit">
+                              <i class="material-icons right">send</i>Change Password
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div class="input-field col s3">
-                    <input id="password1" type="text" class="validate">
-                    <label for="password1">New Password</label>
-                </div>
-                <div class="input-field col s3">
-                    <input id="password2" type="text" class="validate">
-                    <label for="password2">Confirm New Password</label>
-                </div>
-                <div class="col s3">
-                    <a class="waves-effect waves-light btn"><i class="material-icons right">send</i>Change Password</a>
-                </div>
-            </div></div>
+            </form>
             <a id="delete" class="waves-effect waves-light btn red"><i class="material-icons right">warning</i>Delete Account</a>
         </div>
     </template>
@@ -38,8 +44,28 @@ features on this page to edit key details about your account.
     Polymer({
         is: "account-settings",
         attached: function() {
-            // markup markdown
-            site.markdown('#md');
+            $("#chpass_form").submit(function() {
+              var new_password_a = $("#new_password_a").val();
+              var new_password_b = $("#new_password_b").val();
+
+              if (!(new_password_a === new_password_b)) {
+                site.toast("Passwords do not match");
+                return;
+              }
+              site.api(
+                "change_password",
+                $(this).serialize(),
+                function(data) {
+                  if (data.success) {
+                    site.toast("Password changed.");
+                    $(this).reset();
+                  } else {
+                    site.toast(data.errors[0].details)
+                  }
+                }
+              )
+              return false;
+            });
 
             // check for auth
             if (Cookies.get('session') == undefined){
@@ -47,10 +73,13 @@ features on this page to edit key details about your account.
                 site.route('/login');
                 var userAuthed = false;
             }
-            else {
-                var userAuthed = true;
-                var session = Cookies.get('session');
-            }
+
+            var userAuthed = true;
+            var session = Cookies.get('session');
+
+            // markup markdown
+            site.markdown('#md');
+
             if (userAuthed){
                 $('#delete').click(function(){
                     site.notify(

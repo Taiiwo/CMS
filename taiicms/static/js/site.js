@@ -94,34 +94,34 @@ function Site() {
             setTimeout(callback, 0);
         }
     }
-    this.login = function(user, passw, success, fail){
+    this.login = function(username, password, success, fail){
         this.api(
             "login",
             {
-                user: user,
-                passw: passw
+                username: username,
+                password: password
             },
             function(data) {
                 // if the login was successful
-                if (data != "0"){
+                if (data.success) {
                     // set the session cookies
                     Cookies.set('session', data['session']);
-                    Cookies.set('userID', data['userID']);
+                    Cookies.set('user_id', data['user_id']);
                     // set a global variable for the users details
-                    window.user_data = data.details;
+                    window.user_data = data.user_data;
                     // notify the user that the login was successful.
                     site.toast('Login Successful!');
                     // forward the user to the homepage
                     site.route('/');
-                    if (typeof success != 'undefined'){
+                    if (success) {
                         success();
                     }
                     $(window).trigger('auth_changed');
-                }
-                else {
+                } else {
                     // whoops, wrong username or password
-                    site.toast("Invalid Login.");
-                    if (typeof fail != 'undefined'){
+                    console.log("Recieved errors: " + data.errors.map(function(d){return d.error_name}).join(", "))
+                    site.toast(data.errors[0].details);
+                    if (fail) {
                         fail();
                     }
                 }
@@ -130,7 +130,7 @@ function Site() {
     }
     this.logout = function(){
         Cookies.remove('session');
-        Cookies.remove('userID');
+        Cookies.remove('user_id');
         user_data = undefined;
         $(window).trigger('auth_changed');
         site.toast('Logged out.');
@@ -138,16 +138,15 @@ function Site() {
 }
 window.$$ = document.querySelector;
 var site = new Site();
-if (Cookies.get('session') && Cookies.get('userID')){
+if (Cookies.get('session') && Cookies.get('user_id')){
     // user has cookies, auth them
-    site.auth(Cookies.get('userID'), Cookies.get('session'), function(data){
-        if (data != "0"){
-            window.user_data = data;
-        }
-        else {
-            site.toast("Session Expired");
+    site.auth(Cookies.get('user_id'), Cookies.get('session'), function(data){
+        if (data.success) {
+            window.user_data = data.user_data;
+        } else {
+            site.toast("Session Expired.");
             Cookies.remove('session');
-            Cookies.remove('userID');
+            Cookies.remove('user_id');
         }
     });
 }

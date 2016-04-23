@@ -8,6 +8,8 @@ app.static_folder = "static"
 def everything(path):
     return app.send_static_file(path)
 
+
+
 @app.route("/")
 def index():
     return app.send_static_file("index.html")

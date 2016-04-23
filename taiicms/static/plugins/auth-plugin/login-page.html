@@ -16,14 +16,14 @@
             <form id="login-form" action="/api/1/register" method="POST">
               <div class="row">
                   <div class="input-field col s6">
-                      <input value="" id="user" type="text" class="validate" pattern="\w{1,140}">
-                      <label class="active" for="user" data-error="Too long!">Username</label>
+                      <input value="" id="username" type="text" class="validate" pattern="\w{1,140}">
+                      <label class="active" for="username" data-error="Too long!">Username</label>
                   </div>
               </div>
               <div class="row">
                   <div class="input-field col s6">
-                      <input value="" id="passw" type="password" class="validate"  pattern=".{6,140}">
-                      <label data-error="Too short!" class="active" for="passw">Password</label>
+                      <input value="" id="password" type="password" class="validate"  pattern=".{6,140}">
+                      <label data-error="Too short!" class="active" for="password">Password</label>
                   </div>
               </div>
               <button id="login" class="btn waves-effect waves-light" type="submit" name="action">
@@ -46,7 +46,7 @@
                 site.route('/');
             }
             $('#login-form').submit(function(){
-                site.login($('#user').val(), $('#passw').val());
+                site.login($('#username').val(), $('#password').val());
                 return false;
             });
         }

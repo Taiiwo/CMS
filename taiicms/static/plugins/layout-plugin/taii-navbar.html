@@ -54,14 +54,13 @@
                     window.location = action;
                 }
             }
-            var li = $('<li/>')
-                .append($('<a/>')
+            var li = $('<li/>').append(
+                $('<a/>')
                     .attr('id', id)
                     .text(text)
                     .addClass('taii-navbar')
                     .click(action)
-                )
-            ;
+            );
             if (typeof auth == 'undefined'){
                 $('.nav-menu').append(li);
             }
@@ -83,7 +82,7 @@
                 // add welcome message
                 this.append_button(
                     'user-div',
-                    "Hello, " + user_data.user,
+                    "Hello, " + user_data.display_name,
                     function() {
                         site.logout();
                     },
@@ -101,7 +100,7 @@
                   })
                   .mouseout(function(){
                     $('#user-div')
-                      .text("Hello, " + user_data.user)
+                      .text("Hello, " + user_data.display_name)
                     ;
                   })
                 ;
