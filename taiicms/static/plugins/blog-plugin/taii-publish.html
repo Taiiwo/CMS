@@ -27,6 +27,7 @@
                 return false;
             }
             var publish = function(post){
+                var rtm = new RTM();
                 rtm.send({
                     collection: 'posts',
                     senderID_type: 'username',
@@ -45,7 +46,7 @@
                     }
                     publish(post);
                 });
-            }, 0);
+            });
         }
     });
 </script>

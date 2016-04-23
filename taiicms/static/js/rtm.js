@@ -1,5 +1,5 @@
 function RTM(url){
-    this.url = url | 'http://'+ document.location.hostname +':5000/component';
+    this.url = url || 'http://'+ document.location.hostname +':5000/component';
     // Connect to socketserver
     this.ws = io.connect(this.url);
     this.handlers = [];

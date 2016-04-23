@@ -51,14 +51,11 @@
                         }
                         else {
                             site.toast('Registration Successful!');
-                            // parse the user data
-                            data = JSON.parse(data);
                             // set the session cookies
                             Cookies.set('session', data['session']);
                             Cookies.set('userID', data['userID']);
-                            Cookies.set('userName', data['details']['user']);
                             // set a global variable for the users details
-                            window.authUser = data.details;
+                            window.user_data = data.details;
                             // notify the user that the login was successful.
                             site.toast('Login Successful!');
                             // forward the user to the homepage

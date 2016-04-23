@@ -199,6 +199,10 @@ class Util:
         }
         # build an auth key
         session_key = self.sha512(datachest['session_salt'] + datachest['passw'])
+        # check if DataChest exists
+        users = self.get_collection('users', db=self.config['auth_db'])
+        if users.find_one({'name': datachest['user']}):
+            return False
         # store document, creating the datachest user
         self.store(
             datachest,

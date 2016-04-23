@@ -45,7 +45,7 @@ def register():
         'details': details,
         'session_salt': False,
         'is_datachest': False,
-        'datachests': {'public': ['public', util.sha512('')]}   # add public session
+        'datachests': {'Public': ['Public', util.sha512('')]}   # add public session
     }
     # make sure user is not already registered
     if users.find({'user': user}).count() > 0:
@@ -202,7 +202,7 @@ def listen_handler(data):
         users = util.get_collection('users', db=util.config['auth_db'])
         for pair in request_data['recipient_pairs']:
             recipient = users.find_one({'user': pair[0]})
-            if len(recipient) > 0:
+            if recipient and len(recipient) > 0:
                 pair[0] = str(recipient['_id'])
             else:
                 emit('error', 'Recipient username not found')

@@ -104,8 +104,6 @@ function Site() {
             function(data) {
                 // if the login was successful
                 if (data != "0"){
-                    // parse the user data
-                    data = JSON.parse(data);
                     // set the session cookies
                     Cookies.set('session', data['session']);
                     Cookies.set('userID', data['userID']);
@@ -144,7 +142,7 @@ if (Cookies.get('session') && Cookies.get('userID')){
     // user has cookies, auth them
     site.auth(Cookies.get('userID'), Cookies.get('session'), function(data){
         if (data != "0"){
-            window.user_data = JSON.parse(data);
+            window.user_data = data;
         }
         else {
             site.toast("Session Expired");

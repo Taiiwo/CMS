@@ -16,7 +16,7 @@ default_config = {
     "mongo": {
         "host": "localhost",
         "port": 27017,
-        "default_db": "test",
+        "default_db": "component",
         "auth_db": "auth",
     }
 }
