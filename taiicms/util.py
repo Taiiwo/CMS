@@ -26,11 +26,11 @@ class Util:
         elif type(data) is bytes:
             return hashlib.sha512(data).hexdigest()
 
-    def auth(self, userID, session):
+    def auth(self, user_id, session):
         # get user deets
         db = self.get_collection('users', db=self.config['auth_db'])
         # find user in db
-        user = db.find_one({'_id': ObjectId(userID)})
+        user = db.find_one({'_id': ObjectId(user_id)})
         # check if the session is legit
         if user and session == self.sha512(
                 (user['session_salt'] + user['passw']).encode('utf-8')
@@ -40,11 +40,15 @@ class Util:
             return False
 
     def auth_request(self, request):
-        if not "session" in request.form or not "userID" in request.form:
+        try:
+            session = request.form['session']
+            user_id = request.form['user_id']
+        except:
             return False
-        session = request.form['session']
-        userID = request.form['userID']
-        return self.auth(userID, session)
+
+        print(session, user_id)
+
+        return self.auth(user_id, session)
 
     # Authenticates a listen request
     def auth_listen(self, request):
