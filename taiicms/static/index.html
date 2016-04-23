@@ -27,12 +27,12 @@
 
     <app-router>
       <app-route path="/**/" import="pages/home-page.html"></app-route>
-      <app-route path="/register" import="pages/register-page.html"></app-route>
-      <app-route path="/login" import="pages/login-page.html"></app-route>
-      <app-route path="/my-account" import="pages/my-account.html"></app-route>
-      <app-route path="/blog" import="pages/blog-page.html"></app-route>
-      <app-route path="/blog/publish" import="pages/publish-page.html"></app-route>
-      <app-route path="/blog/:id" import="pages/post-page.html"></app-route>
+      <app-route path="/register" element="register-page"></app-route>
+      <app-route path="/login" element="login-page"></app-route>
+      <app-route path="/my-account" element="account-settings"></app-route>
+      <app-route path="/blog" element="taii-blog"></app-route>
+      <app-route path="/blog/publish" element="taii-publish"></app-route>
+      <app-route path="/blog/:id" element="post-page"></app-route>
     </app-router>
 
   </body>
