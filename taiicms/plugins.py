@@ -71,7 +71,17 @@ def load_plugin(plugin_name):
 
     if "pages" in plugin:
         for path, page in plugin["pages"].items():
-            site.pages[path] = "/".join(("", "plugins", plugin_name, page))
+            if isinstance(page, str):
+                page = {"file_path": page}
+
+            if "file_path" in page:
+                site.pages[path] = {
+                    "file_path": "/".join(("", "plugins", plugin_name, page["file_path"]))
+                }
+            elif "element" in page:
+                site.pages[path] = {
+                    "element": page["element"]
+                }
 
 
 def load_plugins():
