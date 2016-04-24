@@ -7,7 +7,6 @@ socketio = SocketIO(app)
 from .config import config, save_config
 
 from . import (
-    admin,
     api,
     plugins,
     site
