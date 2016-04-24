@@ -13,7 +13,17 @@ default_config = {
 
     "debug": False,
 
-    "plugins": {},
+    "plugins": {
+        "blog": {
+            "enabled": True
+        },
+        "layout": {
+            "enabled": True
+        },
+        "auth": {
+            "enabled": True
+        },
+    },
 
     "mongo": {
         "host": "localhost",
@@ -42,7 +52,7 @@ def merge_dicts(a, b):
 def save_config(file_path=DEFAULT_CONFIG_PATH, config_dict=None):
     if config_dict is None:
         config_dict = config
-    
+
     json.dump(
         config_dict,
         open(file_path, "w"),
