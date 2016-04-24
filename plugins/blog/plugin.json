@@ -1,0 +1,18 @@
+{
+  "author": "Taiiwo",
+  "description": "Add a blog thing to your site!",
+  "website": "https://github.com/Taiiwo/TaiiCMS",
+  "depends": ["layout"],
+  "conflicts": [],
+  "datachests": [
+      {
+          "name": "posts",
+          "public": false
+      }
+  ],
+  "pages": {
+    "/blog": "blog-page.html",
+    "/blog/:id": "post-page.html",
+    "/blog/publish": "publish-page.html"
+  }
+}

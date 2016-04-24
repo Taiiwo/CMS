@@ -6,9 +6,11 @@ out of them. If './admin.py plugins install' or
 './admins.py plugins remove <plugin>' is not sufficient, then something else is
 wrong.
 -->
-<!-- layout-plugin -->
-<link rel="import" href="../plugins/layout-plugin/components.html" />
-<!-- /layout-plugin -->
-<!-- blog-plugin -->
-<link rel="import" href="../plugins/blog-plugin/components.html" />
-<!-- /blog-plugin -->
+
+{% for plugin_name, plugin_details in plugins.items() %}
+  {% if plugin_details.config.enabled %}
+    <!-- {{ plugin_name }}-plugin -->
+    <link rel="import" href="/plugins/{{ plugin_name }}/components.html" />
+    <!-- /{{ plugin_name }}-plugin -->
+  {% endif %}
+{% endfor %}

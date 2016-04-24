@@ -26,13 +26,13 @@
     </taii-navbar>
 
     <app-router>
-      <app-route path="/**/" import="pages/home-page.html"></app-route>
-      <app-route path="/register" import="pages/register-page.html"></app-route>
-      <app-route path="/login" import="pages/login-page.html"></app-route>
-      <app-route path="/my-account" import="pages/my-account.html"></app-route>
-      <app-route path="/blog" import="pages/blog-page.html"></app-route>
-      <app-route path="/blog/publish" import="pages/publish-page.html"></app-route>
-      <app-route path="/blog/:id" import="pages/post-page.html"></app-route>
+      <app-route path="/**/" import="/pages/home-page.html"></app-route>
+      <app-route path="/register" import="/pages/register-page.html"></app-route>
+      <app-route path="/login" import="/pages/login-page.html"></app-route>
+      <app-route path="/my-account" import="/pages/my-account.html"></app-route>
+      {% for path, page in pages.items()%}
+          <app-route path="{{ path }}" import="{{ page }}"></app-route>
+      {% endfor %}
     </app-router>
 
   </body>

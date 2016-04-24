@@ -1,7 +1,9 @@
 import os
 import json
 
-from . import app, config, save_config
+from flask import send_from_directory, abort, render_template
+
+from . import app, config, save_config, site
 
 plugins = {}
 
@@ -39,7 +41,6 @@ def refresh_plugins():
     # check the dependencies on all plugins
     # mark as broken if they're missing something
     for plugin in plugins.values():
-        print(plugin)
         for dep in plugin["depends"]:
             if dep not in plugin:
                 plugin["status"] = {
@@ -68,6 +69,10 @@ def load_plugin(plugin_name):
         plugin["import"] = getattr(__import__("plugins.%s" % plugin_name), plugin_name)
         plugin["import"].main(plugin["config"])
 
+    if "pages" in plugin:
+        for path, page in plugin["pages"].items():
+            site.pages[path] = "/".join(("", "plugins", plugin_name, page))
+
 
 def load_plugins():
     for plugin_name, plugin_config in config["plugins"].items():
@@ -78,13 +83,19 @@ def load_plugins():
 
 load_plugins()
 
-@app.route("/plugins/<path:path>")
-def plugins(path):
-    path_parts = path.split("/")[0]
-    plugin, f_path = path_parts[0], path_parts[1:]
-
+@app.route("/plugins/<string:plugin>/<path:path>")
+def plugin_file_resolver(plugin, path):
+    plugin = plugin.lower()
     try:
         if config["plugins"][plugin]["enabled"]:
-            pass
-    except:
-        pass
+            # serve from root dir, not flasks root
+            f_dir = os.path.join(os.path.abspath("."), "plugins", plugin)
+
+            # this appears to be secure. might need more testing.
+            return send_from_directory(f_dir, path)
+    except KeyError:
+        abort(404)
+
+@app.route("/plugin-components.html")
+def plugin_components():
+    return render_template("plugin-components.html", plugins=plugins)
