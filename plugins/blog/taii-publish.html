@@ -3,18 +3,20 @@
         <style>
             /**/
         </style>
-        <form id="article">
-            <div class="row">
-                <taii-input type="textbox" iid="title" label="Title" class="col s6">
+        <div class="container">
+            <form id="article">
+                <div class="row">
+                    <taii-input type="textbox" iid="title" label="Title" class="col s6">
+                    </taii-input>
+                    <taii-input type="textbox" iid="image" label="Image URL" class="col s6">
+                    </taii-input>
+                </div>
+                <taii-input type="textarea" iid="content" label="Content">
                 </taii-input>
-                <taii-input type="textbox" iid="image" label="Image URL" class="col s6">
+                <taii-input type="button" iid="post" label="Post Article">
                 </taii-input>
-            </div>
-            <taii-input type="textarea" iid="content" label="Content">
-            </taii-input>
-            <taii-input type="button" iid="post" label="Post Article">
-            </taii-input>
-        </form>
+            </form>
+        </div>
     </template>
 </dom-module>
 <script>
