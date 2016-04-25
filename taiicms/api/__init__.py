@@ -1,7 +1,7 @@
 from flask import make_response, jsonify
 from flask.ext.cors import CORS
 
-from .errors import error_names
+from .errors import error_names, add_error
 from .. import app, util, config
 
 CORS(app)  # make app work across origins
