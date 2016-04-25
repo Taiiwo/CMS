@@ -44,5 +44,4 @@ def make_error_response(*args, **kwargs):
 from . import (
     user,
     errors,
-    admin
 )
