@@ -40,8 +40,8 @@
                 self.check_auth();
             })
         },
-        check_auth: function(){
-            if (typeof user_data == 'undefined'){
+        check_auth: function() {
+            if (typeof window.user_data == 'undefined') {
                 this.navbar_mode('unauthed');
             }
             else {

@@ -183,7 +183,7 @@ def api_login():
     return make_success_response({
         "session": session_key,
         "user_id": user_id,
-        "details": user_data
+        "user_data": user_data
     })
 
 
