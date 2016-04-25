@@ -12,6 +12,17 @@ function Site() {
             callback
         );
     }
+
+    // make a call to a plugins api
+    this.plugin_api = function(plugin, action, data, callback) {
+        var baseURL = document.location.origin + "/api/plugin/";
+        $.post(
+            baseURL + [plugin, action].join("/"),
+            data,
+            callback
+        );
+    }
+
     // Turns an element filled with markdown into HTML
     this.markdown = function(id){
         var md = new showdown.Converter();
