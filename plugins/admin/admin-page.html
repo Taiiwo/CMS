@@ -1,0 +1,88 @@
+<dom-module id="admin-page">
+    <template>
+        <style>
+          span.config-index {
+            display: inline-block;
+          }
+          span.config-index > input {
+            display: inline-block;
+          }
+
+        </style>
+        <div id="admin-div">
+          <div class="container">
+            <h2>Administration</h2>
+            <p>Manage your plugins and more.</p>
+
+            <div id="settings-div">
+
+            </div>
+          </div>
+        </div>
+    </template>
+</dom-module>
+<script>
+  function parse_config(config) {
+    var element = $("<ul>").addClass("collapsible");
+    $.each(config, function(index, value) {
+      var val_el = $("<li>");
+      val_el.append(
+        $("<div>").addClass("config-index")
+                  .addClass("collapsible-header")
+                  .text(index)
+      );
+
+      // no clue why $(...).val doesn't work, but $(...).attr does
+
+      if (typeof value == "object") {
+        val_el.css({"list-style-type": null});
+        val_el.append(
+          $("<div>").addClass("collapsible-body")
+                    .append(parse_config(value))
+        );
+      } else {
+        var input = $("<div>").addClass("collapsible-body");
+        if (typeof value == "number") {
+          input.append(
+            $("<input>").attr("type", "number")
+                        .attr("value", value)
+                        .attr("disabled", true)
+          );
+        } else if (typeof value == "boolean") {
+          input.append(
+            $("<input>").attr("type", "checkbox")
+                        .attr("checked", value)
+                        .attr("disabled", true)
+          );
+        } else {
+          input.append(
+            $("<input>").attr("type", "string")
+                        .attr("value", value)
+                        .attr("disabled", true)
+          );
+        }
+        val_el.append(input)
+      }
+
+      element.append(val_el);
+    });
+    return element;
+  }
+
+  Polymer({
+      is: "admin-page",
+      attached: function() {
+        site.plugin_api("admin", "config", {}, function(data){
+          if (!data.success){
+            site.toast("Error getting current config file.");
+            return;
+          }
+          config = data.config
+
+          $("#settings-div").append(parse_config(config))
+          $(".collapsible").collapsible({accordion: true})
+
+        })
+      }
+  });
+</script>
