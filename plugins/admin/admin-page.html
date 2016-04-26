@@ -24,7 +24,9 @@
 <script>
   function parse_config(config) {
     var element = $("<ul>").addClass("collapsible");
+    var n = 0;
     $.each(config, function(index, value) {
+      n++;
       var val_el = $("<li>");
       val_el.append(
         $("<div>").addClass("config-index")
@@ -53,6 +55,9 @@
             $("<input>").attr("type", "checkbox")
                         .attr("checked", value)
                         .attr("disabled", true)
+                        .attr('id', 'checkbox' + n)
+          ,
+            $('<label>').attr('for', 'checkbox' + n)
           );
         } else {
           input.append(

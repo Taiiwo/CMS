@@ -2,7 +2,7 @@
 import os
 import sys
 import json
-from taiicms.lib import util
+from taiicms import util
 from taiicms import config
 
 util = util.Util(config['mongo'])
@@ -32,7 +32,7 @@ if command == "admin":
             )
         users = util.get_collection('users', db=util.config['auth_db'])
         # find user
-        user = users.find_one({'user': arg[0]})
+        user = users.find_one({'username': arg[0]})
         if not user:
             quit("[E] User does not exist")
         util.update_user(user['_id'], {"$set": {'is_admin': True}})
