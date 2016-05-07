@@ -1,78 +1,148 @@
 <dom-module id="admin-page">
     <template>
-        <style>
-          span.config-index {
-            display: inline-block;
-          }
-          span.config-index > input {
-            display: inline-block;
-          }
-
-        </style>
         <div id="admin-div">
           <div class="container">
             <h2>Administration</h2>
             <p>Manage your plugins and more.</p>
 
-            <div id="settings-div">
+            <div id="json-editor-gui">
+              <nav>
+                <div class="nav-wrapper">
+                  <div id="json-editor-gui-nav" class="col s12">
+                    <a class="breadcrumb">config</a>
+                  </div>
+                </div>
+              </nav>
+              <div id="json-editor-gui-settings">
 
+              </div>
             </div>
+
           </div>
         </div>
     </template>
 </dom-module>
 <script>
-  function parse_config(config) {
-    var element = $("<ul>").addClass("collapsible");
-    var n = 0;
-    $.each(config, function(index, value) {
-      n++;
-      var val_el = $("<li>");
-      val_el.append(
-        $("<div>").addClass("config-index")
-                  .addClass("collapsible-header")
-                  .text(index)
-      );
+  var global_config;
 
-      // no clue why $(...).val doesn't work, but $(...).attr does
+  function get_node(obj, node_id) {
+    if (node_id === "")
+      return obj;
 
-      if (typeof value == "object") {
-        val_el.css({"list-style-type": null});
-        val_el.append(
-          $("<div>").addClass("collapsible-body")
-                    .append(parse_config(value))
-        );
-      } else {
-        var input = $("<div>").addClass("collapsible-body");
-        if (typeof value == "number") {
-          input.append(
-            $("<input>").attr("type", "number")
-                        .attr("value", value)
-                        .attr("disabled", true)
-          );
-        } else if (typeof value == "boolean") {
-          input.append(
-            $("<input>").attr("type", "checkbox")
-                        .attr("checked", value)
-                        .attr("disabled", true)
-                        .attr('id', 'checkbox' + n)
-          ,
-            $('<label>').attr('for', 'checkbox' + n)
-          );
-        } else {
-          input.append(
-            $("<input>").attr("type", "string")
-                        .attr("value", value)
-                        .attr("disabled", true)
-          );
-        }
-        val_el.append(input)
-      }
-
-      element.append(val_el);
+    var node_names = node_id.split(",")
+    var node = obj;
+    node_names.forEach(function(name) {
+      node = node[name];
     });
-    return element;
+    return node;
   }
+
+  function on_nav_clicked(event) {
+    console.log("clicked nav");
+    console.log(event);
+    console.log(this);
+    load_node(global_config, $(this).attr("data-nodepath"))
+    return false;
+  }
+
+  function on_item_clicked(event) {
+    console.log("clicked item");
+    console.log(event);
+    console.log($(this).attr("data-nodepath"));
+    load_node(global_config, $(this).attr("data-nodepath"));
+    return false;
+  }
+
+  function reset_nav() {
+    var nav = $("#json-editor-gui-nav").empty()
+    return nav.append($("<a>").addClass("breadcrumb")
+                              .attr("data-nodepath", "")
+                              .attr("href", "#!")
+                              .click(on_nav_clicked)
+                              .text("config")
+    );
+  }
+
+  function load_node(obj, node_id) {
+    console.log(obj, node_id)
+    path = node_id.split(",");
+    node = get_node(obj, node_id);
+    var nav = reset_nav();
+    var settings = $("#json-editor-gui-settings").empty()
+
+    if (node_id !== ""){
+      path.forEach(function(name, index, arr) {
+        nav.append(
+          $("<a>").addClass("breadcrumb")
+                  .attr("data-nodepath", arr.slice(0, index).join(","))
+                  .attr("href", "#!")
+                  .click(on_nav_clicked)
+                  .text(name)
+        );
+      });
+    }
+
+    $.each(node, function(index, value) {
+      if (typeof value == "object"){
+        settings.append(
+          $("<a>").attr("data-nodepath", (node_id === "")? index: [node_id, index].join(","))
+                  .attr("href","#!")
+                  .click(on_item_clicked)
+                  .text(index),
+          $("<br />")
+        )
+      } else /*if (typeof value === "text")*/ {
+        settings.append(
+          $("<span>").attr("data-nodepath", index)
+                     .addClass("json-editor-gui-label")
+                     .text(index),
+          $("<input>").attr("data-nodepath", index)
+                      .addClass("json-editor-gui-input")
+                      .val(value)
+
+        )
+      }
+    })
+  }
+
+  function load_config(config_obj) {
+    global_config = config_obj;
+    load_node(config_obj, "")
+  }
+
+  // function parse_config(config) {
+  //   var element = $("<ul>").addClass("collapsible")
+  //                          .addClass("popout");
+  //
+  //   var n = 0;
+  //   $.each(config, function(index, value) {
+  //     var el = $("<div>");
+  //     var index_el = $("<span>").text(index).css("font-weight", "bold");
+  //     var val_el;
+  //
+  //     el.append(index_el);
+  //
+  //     if (typeof value == "object"){
+  //       val_el = $("<a>").attr("value", ">");
+  //     } else {
+  //       val_el = $("<input>");
+  //       if (typeof value == "boolean") {
+  //         val_el.attr("type", "checkbox")
+  //               .attr("checked", value ? 1 : 0);
+  //       } else if (typeof value == "number") {
+  //         val_el.attr("type", "number")
+  //               .attr("value", value);
+  //       } else {
+  //         val_el.attr("type", "text")
+  //               .attr("value", value);
+  //       }
+  //     }
+  //     el.append(val_el);
+  //
+  //     element.append($("<li>").append(el));
+  //   });
+  //   return element;
+  // }
 
   Polymer({
       is: "admin-page",
@@ -82,10 +152,11 @@
             site.toast("Error getting current config file.");
             return;
           }
-          config = data.config
+          config = data.config;
 
-          $("#settings-div").append(parse_config(config))
-          $(".collapsible").collapsible({accordion: true})
+          // $("#settings-div").append(parse_config(config));
+          // $(".collapsible").collapsible({accordion: true});
+          load_config(config)
 
         })
       }
