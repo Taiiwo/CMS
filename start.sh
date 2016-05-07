@@ -7,4 +7,4 @@
 
 trap "kill %1" SIGINT
 
-python3 run.py
+python3 main.py
