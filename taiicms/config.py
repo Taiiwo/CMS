@@ -50,8 +50,11 @@ def merge_dicts(a, b):
 
 
 def save_config(file_path=DEFAULT_CONFIG_PATH, config_dict=None):
+    global config
     if config_dict is None:
         config_dict = config
+    else:
+        config = config_dict
 
     json.dump(
         config_dict,
