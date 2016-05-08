@@ -38,17 +38,11 @@
   }
 
   function on_nav_clicked(event) {
-    console.log("clicked nav");
-    console.log(event);
-    console.log(this);
     load_node(global_config, $(this).attr("data-nodepath"))
     return false;
   }
 
   function on_item_clicked(event) {
-    console.log("clicked item");
-    console.log(event);
-    console.log($(this).attr("data-nodepath"));
     load_node(global_config, $(this).attr("data-nodepath"));
     return false;
   }
@@ -64,7 +58,6 @@
   }
 
   function load_node(obj, node_id) {
-    console.log(obj, node_id)
     path = node_id.split(",");
     node = get_node(obj, node_id);
     var nav = reset_nav();
@@ -91,7 +84,7 @@
                   .text(index),
           $("<br />")
         )
-      } else /*if (typeof value === "text")*/ {
+      } else {
         settings.append(
           $("<span>").attr("data-nodepath", index)
                      .addClass("json-editor-gui-label")
@@ -110,40 +103,6 @@
     load_node(config_obj, "")
   }
 
-  // function parse_config(config) {
-  //   var element = $("<ul>").addClass("collapsible")
-  //                          .addClass("popout");
-  //
-  //   var n = 0;
-  //   $.each(config, function(index, value) {
-  //     var el = $("<div>");
-  //     var index_el = $("<span>").text(index).css("font-weight", "bold");
-  //     var val_el;
-  //
-  //     el.append(index_el);
-  //
-  //     if (typeof value == "object"){
-  //       val_el = $("<a>").attr("value", ">");
-  //     } else {
-  //       val_el = $("<input>");
-  //       if (typeof value == "boolean") {
-  //         val_el.attr("type", "checkbox")
-  //               .attr("checked", value ? 1 : 0);
-  //       } else if (typeof value == "number") {
-  //         val_el.attr("type", "number")
-  //               .attr("value", value);
-  //       } else {
-  //         val_el.attr("type", "text")
-  //               .attr("value", value);
-  //       }
-  //     }
-  //     el.append(val_el);
-  //
-  //     element.append($("<li>").append(el));
-  //   });
-  //   return element;
-  // }
-
   Polymer({
       is: "admin-page",
       attached: function() {
@@ -154,8 +113,6 @@
           }
           config = data.config;
 
-          // $("#settings-div").append(parse_config(config));
-          // $(".collapsible").collapsible({accordion: true});
           load_config(config)
 
         })
