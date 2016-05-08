@@ -1,0 +1,12 @@
+{
+  "author": "Mitame",
+  "description": "Adds an online administration dashboard to your site.",
+  "website": "https://github.com/Taiiwo/TaiiCMS",
+  "depends": ["layout", "auth"],
+  "conflicts": [],
+  "pages": {
+    "/admin": {
+      "element": "admin-page"
+    }
+  }
+}

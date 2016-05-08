@@ -11,6 +11,11 @@ class Util:
 
         # Connect to MongoDB
         self.connect()
+        try:
+            self.mongo.server_info()  # force a test of server connection
+        except pymongo.errors.ServerSelectionTimeoutError:
+            print("Could not connect to mongodb at %s:%s.\nMake sure the mongo server is running and the TaiiCMS config file is correct." % [config["host"], config["port"]])
+            raise SystemExit()
         self.db = self.mongo[self.config['default_db']]
 
     def connect(self):
