@@ -1,26 +1,48 @@
 <dom-module id="admin-page">
-    <template>
-        <div id="admin-div">
-          <div class="container">
-            <h2>Administration</h2>
-            <p>Manage your plugins and more.</p>
+  <template>
+    <style>
+      div#json-editor-gui-nav {
+        padding-left: 8px;
+      }
 
-            <div id="json-editor-gui">
-              <nav>
-                <div class="nav-wrapper">
-                  <div id="json-editor-gui-nav" class="col s12">
-                    <a class="breadcrumb">config</a>
-                  </div>
-                </div>
-              </nav>
-              <div id="json-editor-gui-settings">
+      #json-editor-gui-table {
+        table-layout: fixed;
+        width: 100%;
+      }
+      
+      .json-editor-gui-index {
+        overflow: hidden;
+        width: 100px;
+      }
+    </style>
+    <div id="admin-div">
+      <div class="container">
+        <h2>Administration</h2>
+        <p>Manage your plugins and more.</p>
 
+        <div id="json-editor-gui">
+          <nav>
+            <div class="nav-wrapper">
+              <div id="json-editor-gui-nav" class="col s12">
+                <a class="breadcrumb">config</a>
               </div>
             </div>
+          </nav>
+          <table class="responsive-table" id="json-editor-gui-table">
+            <thead>
+              <tr>
+                <th>Index</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody id="json-editor-gui-settings">
 
-          </div>
+            </tbody>
+          </table>
         </div>
-    </template>
+      </div>
+    </div>
+  </template>
 </dom-module>
 <script>
   var global_config;
@@ -57,7 +79,27 @@
     );
   }
 
+  function show_value_editor(event) {
+    var input = $("<input>", {
+                  "val": $(this).text(),
+                  "type": "text"
+                }).addClass("json-editor-gui-input")
+                  .blur(hide_value_editor)
+    $(this).replaceWith(input);
+    input.focus();
+    input.select();
+  }
+
+  function hide_value_editor(event) {
+    var span = $("<span>", {
+                  "text": $(this).val()
+               }).addClass("json-editor-gui-value")
+                 .click(show_value_editor)
+    $(this).replaceWith(span)
+  }
+
   function load_node(obj, node_id) {
+    console.log(obj, node_id)
     path = node_id.split(",");
     node = get_node(obj, node_id);
     var nav = reset_nav();
@@ -67,32 +109,59 @@
       path.forEach(function(name, index, arr) {
         nav.append(
           $("<a>").addClass("breadcrumb")
-                  .attr("data-nodepath", arr.slice(0, index).join(","))
-                  .attr("href", "#!")
-                  .click(on_nav_clicked)
-                  .text(name)
+                   .attr("data-nodepath", arr.slice(0, index+1).join(","))
+                   .attr("href", "#!")
+
+                   .click(on_nav_clicked)
+                   .text(name)
         );
       });
     }
 
     $.each(node, function(index, value) {
+      var nodepath = (node_id === "")? index: [node_id, index].join(",")
       if (typeof value == "object"){
         settings.append(
-          $("<a>").attr("data-nodepath", (node_id === "")? index: [node_id, index].join(","))
-                  .attr("href","#!")
-                  .click(on_item_clicked)
-                  .text(index),
-          $("<br />")
+          $("<tr>").append(
+            $("<td>").attr("colspan", 2)
+                     .addClass("json-editor-gui-index")
+                     .append(
+               $("<a>").attr("data-nodepath", nodepath)
+                       .attr("href","#!")
+                       .click(on_item_clicked)
+                       .text(index)
+            )
+          )
+        )
+      } else if (typeof value === "boolean"){
+        settings.append(
+          $("<tr>").append(
+            $("<td>").attr("data-nodepath", nodepath)
+                     .addClass("json-editor-gui-index")
+                     .text(index),
+            $("<td>").append(
+              $("<input>", {
+                "type": "checkbox",
+                "id": ["checkbox", nodepath].join(",")
+              }).addClass("json-editor-gui-value")
+                .attr("checked", value),
+              $("<label>").attr("for", ["checkbox", nodepath].join(","))
+            )
+          )
         )
       } else {
         settings.append(
-          $("<span>").attr("data-nodepath", index)
-                     .addClass("json-editor-gui-label")
+          $("<tr>").append(
+            $("<td>").attr("data-nodepath", nodepath)
+                     .addClass("json-editor-gui-index")
                      .text(index),
-          $("<input>").attr("data-nodepath", index)
-                      .addClass("json-editor-gui-input")
-                      .val(value)
-
+            $("<td>").append(
+              $("<span>").attr("data-nodepath", nodepath)
+                         .addClass("json-editor-gui-value")
+                         .text(value)
+                         .click(show_value_editor)
+            )
+          )
         )
       }
     })
@@ -113,6 +182,8 @@
           }
           config = data.config;
 
+          // $("#settings-div").append(parse_config(config));
+          // $(".collapsible").collapsible({accordion: true});
           load_config(config)
 
         })
