@@ -29,7 +29,7 @@ def refresh_plugins():
         if p not in config["plugins"]:
             config["plugins"][p] = default_config
         else:
-            config["plugins"][p] = merge_dicts(config["plugins"][p], default_config)
+            config["plugins"][p] = merge_dicts(default_config, config["plugins"][p])
 
 
 
