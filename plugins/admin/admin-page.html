@@ -9,7 +9,7 @@
         table-layout: fixed;
         width: 100%;
       }
-      
+
       .json-editor-gui-index {
         overflow: hidden;
         width: 100px;
@@ -45,7 +45,28 @@
   </template>
 </dom-module>
 <script>
-  var global_config;
+var global_config;
+
+// replace the $(...).attr() function with one that returns an object when given no args
+  (function(old) {
+    $.fn.attr = function() {
+      if(arguments.length === 0) {
+        if(this.length === 0) {
+          return null;
+        }
+
+        var obj = {};
+        $.each(this[0].attributes, function() {
+          if(this.specified) {
+            obj[this.name] = this.value;
+          }
+        });
+        return obj;
+      }
+
+      return old.apply(this, arguments);
+    };
+  })($.fn.attr);
 
   function get_node(obj, node_id) {
     if (node_id === "")
@@ -57,6 +78,30 @@
       node = node[name];
     });
     return node;
+  }
+
+  function save_node(obj, node_id, data) {
+    split_path = node_id.split(",")
+    path = split_path.slice(0, split_path.length - 1).join(",");
+    path = path?path:"";
+    file = split_path[split_path.length - 1];
+
+    node = get_node(obj, node_id.split(",").slice(0, -2).join(","));
+
+    switch (typeof node[file]) {
+      case "number":
+        data = parseFloat(data);
+        break;
+      case "boolean":
+        if (data === "checked" || data === "unchecked"){
+          data = (data === "checked")?true:false;
+          break;
+        } else {
+          data = data?true:false;
+          break;
+        }
+    }
+    node[file] = data;
   }
 
   function on_nav_clicked(event) {
@@ -79,27 +124,55 @@
     );
   }
 
+  function keyup_value_editor(event) {
+    if (event.keyCode == 13 || event.keyCode == 27) { // enter or esc
+      $(this).blur()
+    }
+  }
+
+  function checkbox_change(event) {
+    value = get_node(global_config, $(this).attr("data-nodepath"))
+    save_node(global_config, $(this).attr("data-nodepath"), !value)
+    return true;
+  }
+
   function show_value_editor(event) {
     var input = $("<input>", {
                   "val": $(this).text(),
                   "type": "text"
                 }).addClass("json-editor-gui-input")
-                  .blur(hide_value_editor)
+                  .attr($(this).attr())
+                  .blur(blur_value_editor)
+                  .keyup(keyup_value_editor)
     $(this).replaceWith(input);
     input.focus();
     input.select();
   }
 
-  function hide_value_editor(event) {
+  function blur_value_editor(event) {
+    var datatype = $(this).attr("data-type")
+    var data = $(this).val()
+    if (datatype === "number"){
+      if ($.isNumeric(data)){
+        data = parseFloat(data)
+      } else {
+        site.toast("Data is not valid, must be a " + datatype)
+        $(this).focus();
+        $(this).select();
+        return;
+      }
+    }
+
+    save_node(global_config, $(this).attr("data-nodepath"), data)
     var span = $("<span>", {
                   "text": $(this).val()
                }).addClass("json-editor-gui-value")
+                 .attr($(this).attr())
                  .click(show_value_editor)
     $(this).replaceWith(span)
   }
 
   function load_node(obj, node_id) {
-    console.log(obj, node_id)
     path = node_id.split(",");
     node = get_node(obj, node_id);
     var nav = reset_nav();
@@ -144,7 +217,9 @@
                 "type": "checkbox",
                 "id": ["checkbox", nodepath].join(",")
               }).addClass("json-editor-gui-value")
-                .attr("checked", value),
+                .attr("data-nodepath", nodepath)
+                .attr("checked", value)
+                .change(checkbox_change),
               $("<label>").attr("for", ["checkbox", nodepath].join(","))
             )
           )
@@ -157,6 +232,7 @@
                      .text(index),
             $("<td>").append(
               $("<span>").attr("data-nodepath", nodepath)
+                         .attr("data-type", typeof value)
                          .addClass("json-editor-gui-value")
                          .text(value)
                          .click(show_value_editor)
@@ -175,15 +251,13 @@
   Polymer({
       is: "admin-page",
       attached: function() {
-        site.plugin_api("admin", "config", {}, function(data){
-          if (!data.success){
+        site.plugin_api("admin", "config", {}, function(data) {
+          if (!data.success) {
             site.toast("Error getting current config file.");
             return;
           }
           config = data.config;
 
-          // $("#settings-div").append(parse_config(config));
-          // $(".collapsible").collapsible({accordion: true});
           load_config(config)
 
         })
