@@ -39,6 +39,18 @@
 
             </tbody>
           </table>
+          <div class="fixed-action-btn" style="bottom: 45px; right: 24px;">
+            <a class="btn-floating btn-large red">
+              <i class="large material-icons">menu</i>
+            </a>
+            <ul>
+              <li><a id="json-editor-gui-save-button" class="btn-floating green tooltipped"
+                 data-position="left" data-tooltip="Save & Upload">
+                    <i class="material-icons">save</i>
+                  </a>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -259,8 +271,38 @@ var global_config;
           config = data.config;
 
           load_config(config)
-
         })
+
+        $("#json-editor-gui-save-button").click(function() {
+          var button = $(this);
+          button.children("i").replaceWith(
+            $("<div>").addClass("spinner-layer", "spinner-green").append(
+              $("<div>").addClass("circle-clipper", "left").append(
+                $("<div>").addClass("circle")
+              ),
+              $("<div>").addClass("gap-patch").append(
+                $("<div>").addClass("circle")
+              ),
+              $("<div>").addClass("circle-clipper", "right").append(
+                $("<div>").addClass("circle")
+              )
+            )
+          );
+
+          site.toast("Uploading new configuration...")
+          site.plugin_api("admin", "config/save", {"new_config": JSON.stringify(global_config)}, function(data) {
+            button.children("div.spinner-layer").replaceWith(
+              $("<i>").addClass("material-icons")
+                      .text("save")
+            );
+            if (!data.success) {
+              site.toast("Upload failed. An unexpected error occurred.")
+              console.log(data)
+              return;
+            }
+            site.toast("Uploaded new configuration!")
+          });
+        });
       }
   });
 </script>

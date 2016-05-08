@@ -3,6 +3,7 @@ from taiicms.api import make_error_response, make_success_response, user
 from taiicms.api.errors import error_names, add_error
 
 from flask import request
+import json
 
 add_error(
     "admin_required",
@@ -31,7 +32,7 @@ def api_admin_config_get():
 
     return make_success_response({"config": config})
 
-
+@app.route("/api/plugin/admin/config/save", methods=["POST"])
 @app.route("/api/plugin/admin/config/update", methods=["POST"])
 def api_admin_config_update():
     user_data = user.authenticate()
@@ -42,7 +43,7 @@ def api_admin_config_update():
         return make_error_response("admin_required")
 
     try:
-        cfg = request.get("new_config")
+        cfg = request.form["new_config"]
     except KeyError:
         return make_error_response("data_required", "new_config")
 
@@ -54,20 +55,11 @@ def api_admin_config_update():
     if not check_config(cfg):
         return make_error_response("config_invalid")
 
-    config = cfg
+    print(cfg)
+    save_config(config_dict=cfg)
+
     return make_success_response()
 
-@app.route("/api/plugin/admin/config/save", methods=["POST"])
-def api_admin_config_save():
-    user_data = user.authenticate()
-    if user_data is None:
-        return make_error_response("login_required")
-
-    if not user_data["is_admin"]:
-        return make_error_response("admin_required")
-
-    save_config()
-    return make_success_response()
 
 
 def main(config):
