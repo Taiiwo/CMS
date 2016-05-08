@@ -20,6 +20,7 @@ class Payment():
         self.order['ipaddress'] = ip_adress
         self.order['tax'] = '{0:.2f}'.format(float(tax))
         self.order['ponumber'] = po_number
+        return self.order
 
     def set_billing(self, first_name, last_name, company, address1, address2,
                    city, state, zip, country, phone, fax, email, website):
@@ -36,6 +37,7 @@ class Payment():
         self.billing['fax']       = fax
         self.billing['email']     = email
         self.billing['website']   = website
+        return self.billing
 
     def set_shipping(self, first_name, lastname, company, address1, address2,
                     city, state, zipcode, country, email):
@@ -49,14 +51,12 @@ class Payment():
         self.shipping['zip']       = zipcode
         self.shipping['country']   = country
         self.shipping['email']     = email
+        return self.shipping
 
     def do_sale(self,amount, ccnumber, ccexp, cvv=False):
         query = {}
         query.update(self.login)
         # Sales Information
-        query += "ccnumber=" + urllib.quote(ccnumber) + "&"
-        query += "ccexp=" + urllib.quote(ccexp) + "&"
-        query += "amount=" + urllib.quote('{0:.2f}'.format(float(amount))) + "&"
         query.update({
             "ccnumber": ccnumber,
             "ccexp": ccexp,
