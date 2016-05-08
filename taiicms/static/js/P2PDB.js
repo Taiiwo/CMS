@@ -1,4 +1,5 @@
 function P2PDB(peers) {
+  this.peers = peers;
   // Listen method that prioritises using WebRTC to steam data from peers
   this.listen = function(query) {
     for (var peer in peers) {
