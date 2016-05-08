@@ -1,0 +1,304 @@
+<dom-module id="json-to-form">
+  <template>
+    <style>
+      div#json-editor-gui-nav {
+        padding-left: 8px;
+      }
+
+      #json-editor-gui-table {
+        table-layout: fixed;
+        width: 100%;
+      }
+
+      .json-editor-gui-index {
+        overflow: hidden;
+        width: 100px;
+      }
+    </style>
+    <div id="admin-div">
+      <div id="json-editor-gui">
+        <nav>
+          <div class="nav-wrapper">
+            <div id="json-editor-gui-nav" class="col s12">
+              <a class="breadcrumb">config</a>
+            </div>
+          </div>
+        </nav>
+        <table class="responsive-table" id="json-editor-gui-table">
+          <thead>
+            <tr>
+              <th>Index</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody id="json-editor-gui-settings">
+
+          </tbody>
+        </table>
+        <div class="fixed-action-btn" style="bottom: 45px; right: 24px;">
+          <a class="btn-floating btn-large red">
+            <i class="large material-icons">menu</i>
+          </a>
+          <ul>
+            <li><a id="json-editor-gui-save-button" class="btn-floating green tooltipped"
+               data-position="left" data-tooltip="Save & Upload">
+                  <i class="material-icons">save</i>
+                </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="hiddendiv" id="json">
+      <content />
+    </div>
+  </template>
+</dom-module>
+<script>
+var global_config;
+
+// replace the $(...).attr() function with one that returns an object when given no args
+  (function(old) {
+    $.fn.attr = function() {
+      if(arguments.length === 0) {
+        if(this.length === 0) {
+          return null;
+        }
+
+        var obj = {};
+        $.each(this[0].attributes, function() {
+          if(this.specified) {
+            obj[this.name] = this.value;
+          }
+        });
+        return obj;
+      }
+
+      return old.apply(this, arguments);
+    };
+  })($.fn.attr);
+
+  function get_node(obj, node_id) {
+    if (node_id === "")
+      return obj;
+
+    var node_names = node_id.split(",")
+    var node = obj;
+    node_names.forEach(function(name) {
+      node = node[name];
+    });
+    return node;
+  }
+
+  function save_node(obj, node_id, data) {
+    split_path = node_id.split(",")
+    path = split_path.slice(0, split_path.length - 1).join(",");
+    path = path?path:"";
+    file = split_path[split_path.length - 1];
+
+    node = get_node(obj, node_id.split(",").slice(0, -2).join(","));
+
+    switch (typeof node[file]) {
+      case "number":
+        data = parseFloat(data);
+        break;
+      case "boolean":
+        if (data === "checked" || data === "unchecked"){
+          data = (data === "checked")?true:false;
+          break;
+        } else {
+          data = data?true:false;
+          break;
+        }
+    }
+    node[file] = data;
+  }
+
+  function on_nav_clicked(event) {
+    load_node(global_config, $(this).attr("data-nodepath"))
+    return false;
+  }
+
+  function on_item_clicked(event) {
+    load_node(global_config, $(this).attr("data-nodepath"));
+    return false;
+  }
+
+  function reset_nav() {
+    var nav = $("#json-editor-gui-nav").empty()
+    return nav.append($("<a>").addClass("breadcrumb")
+                              .attr("data-nodepath", "")
+                              .attr("href", "#!")
+                              .click(on_nav_clicked)
+                              .text("config")
+    );
+  }
+
+  function keyup_value_editor(event) {
+    if (event.keyCode == 13 || event.keyCode == 27) { // enter or esc
+      $(this).blur()
+    }
+  }
+
+  function checkbox_change(event) {
+    value = get_node(global_config, $(this).attr("data-nodepath"))
+    save_node(global_config, $(this).attr("data-nodepath"), !value)
+    return true;
+  }
+
+  function show_value_editor(event) {
+    var input = $("<input>", {
+                  "val": $(this).text(),
+                  "type": "text"
+                }).addClass("json-editor-gui-input")
+                  .attr($(this).attr())
+                  .blur(blur_value_editor)
+                  .keyup(keyup_value_editor)
+    $(this).replaceWith(input);
+    input.focus();
+    input.select();
+  }
+
+  function blur_value_editor(event) {
+    var datatype = $(this).attr("data-type")
+    var data = $(this).val()
+    if (datatype === "number"){
+      if ($.isNumeric(data)){
+        data = parseFloat(data)
+      } else {
+        site.toast("Data is not valid, must be a " + datatype)
+        $(this).focus();
+        $(this).select();
+        return;
+      }
+    }
+
+    save_node(global_config, $(this).attr("data-nodepath"), data)
+    var span = $("<span>", {
+                  "text": $(this).val()
+               }).addClass("json-editor-gui-value")
+                 .attr($(this).attr())
+                 .click(show_value_editor)
+    $(this).replaceWith(span)
+  }
+
+  function load_node(obj, node_id) {
+    path = node_id.split(",");
+    node = get_node(obj, node_id);
+    var nav = reset_nav();
+    var settings = $("#json-editor-gui-settings").empty()
+
+    if (node_id !== ""){
+      path.forEach(function(name, index, arr) {
+        nav.append(
+          $("<a>").addClass("breadcrumb")
+                   .attr("data-nodepath", arr.slice(0, index+1).join(","))
+                   .attr("href", "#!")
+
+                   .click(on_nav_clicked)
+                   .text(name)
+        );
+      });
+    }
+
+    $.each(node, function(index, value) {
+      var nodepath = (node_id === "")? index: [node_id, index].join(",")
+      if (typeof value == "object"){
+        settings.append(
+          $("<tr>").append(
+            $("<td>").attr("colspan", 2)
+                     .addClass("json-editor-gui-index")
+                     .append(
+               $("<a>").attr("data-nodepath", nodepath)
+                       .attr("href","#!")
+                       .click(on_item_clicked)
+                       .text(index)
+            )
+          )
+        )
+      } else if (typeof value === "boolean"){
+        settings.append(
+          $("<tr>").append(
+            $("<td>").attr("data-nodepath", nodepath)
+                     .addClass("json-editor-gui-index")
+                     .text(index),
+            $("<td>").append(
+              $("<input>", {
+                "type": "checkbox",
+                "id": ["checkbox", nodepath].join(",")
+              }).addClass("json-editor-gui-value")
+                .attr("data-nodepath", nodepath)
+                .attr("checked", value)
+                .change(checkbox_change),
+              $("<label>").attr("for", ["checkbox", nodepath].join(","))
+            )
+          )
+        )
+      } else {
+        settings.append(
+          $("<tr>").append(
+            $("<td>").attr("data-nodepath", nodepath)
+                     .addClass("json-editor-gui-index")
+                     .text(index),
+            $("<td>").append(
+              $("<span>").attr("data-nodepath", nodepath)
+                         .attr("data-type", typeof value)
+                         .addClass("json-editor-gui-value")
+                         .text(value)
+                         .click(show_value_editor)
+            )
+          )
+        )
+      }
+    })
+  }
+
+  function load_config(config_obj) {
+    global_config = config_obj;
+    load_node(config_obj, "")
+  }
+
+  Polymer({
+      is: "json-to-form",
+      load_json: function(json) {
+        load_config(json);
+      },
+      serialize: function() {
+        return global_config;
+      },
+      attached: function() {
+        load_config(JSON.parse($('#json').html()));
+
+        $("#json-editor-gui-save-button").click(function() {
+          var button = $(this);
+          button.children("i").replaceWith(
+            $("<div>").addClass("spinner-layer", "spinner-green").append(
+              $("<div>").addClass("circle-clipper", "left").append(
+                $("<div>").addClass("circle")
+              ),
+              $("<div>").addClass("gap-patch").append(
+                $("<div>").addClass("circle")
+              ),
+              $("<div>").addClass("circle-clipper", "right").append(
+                $("<div>").addClass("circle")
+              )
+            )
+          );
+
+          site.toast("Uploading new configuration...")
+          site.plugin_api("admin", "config/save", {"new_config": JSON.stringify(global_config)}, function(data) {
+            button.children("div.spinner-layer").replaceWith(
+              $("<i>").addClass("material-icons")
+                      .text("save")
+            );
+            if (!data.success) {
+              site.toast("Upload failed. An unexpected error occurred.")
+              console.log(data)
+              return;
+            }
+            site.toast("Uploaded new configuration!")
+          });
+        });
+      }
+  });
+</script>
