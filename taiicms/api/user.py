@@ -293,33 +293,6 @@ def update_user():
     else:
         return make_error_response("unknown_error")
 
-@app.route("/api/1/join-paid-datachest")
-def join_paid_datachest():
-    try:
-        query = {
-            'orderid'
-            'orderdescription'
-            'shipping'
-            'ipaddress'
-            'tax'
-            'ponumber'
-            'firstname'
-            'lastname'
-            'company'
-            'address1'
-            'address2'
-            'city'
-            'state'
-            'zip'
-            'country'
-            'phone'
-            'fax'
-            'email'
-            'website'
-        }
-    except KeyError as e:
-        return make_error_response("data_required", e.args)
-
 # SocketIO handlers that allow limited database access to the front end
 
 # Object that represents a socket connection
