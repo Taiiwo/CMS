@@ -98,7 +98,7 @@ var global_config;
     path = path?path:"";
     file = split_path[split_path.length - 1];
 
-    node = get_node(obj, node_id.split(",").slice(0, -2).join(","));
+    node = get_node(obj, path);
 
     switch (typeof node[file]) {
       case "number":
