@@ -62,13 +62,13 @@ if command == "datachest":
                     '''[E] Requires two arguments: Username of user to add, then
                     the name of the datachest'''
                 )
-            username = arg[0]
+            username = arg[0].lower()
             datachest = arg[1]
             # get user id
             user = util.get_collection(
                 'users', db=util.config['auth_db']
             ).find_one(
-                {'user': username}
+                {'username': username}
             )
             if not user:
                 quit('[E] User does not exist')
