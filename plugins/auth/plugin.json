@@ -6,13 +6,13 @@
   "conflicts": [],
   "pages": {
     "/my-account": {
-      "element": "account-settings"
+      "file_path": "account-settings.html"
     },
     "/login": {
-      "element": "login-page"
+      "file_path": "login-page.html"
     },
     "/register": {
-      "element": "register-page"
+      "file_path": "register-page.html"
     }
   }
 }

@@ -1,3 +1,4 @@
+<link rel="import" href="../layout/taii-grid.html" />
 <dom-module id="taii-blog">
     <template>
         <style>
@@ -62,7 +63,7 @@
                         .append($('<a/>')
                             .attr(
                                 'href',
-                                '/#/blog/' + data.id + '#' + data.data.title
+                                '/#/blog/post/' + data.id + '#' + data.data.title
                             )
                             .text("Read more")
                         )

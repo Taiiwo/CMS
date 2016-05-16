@@ -11,8 +11,14 @@
       }
   ],
   "pages": {
-    "/blog": "blog-page.html",
-    "/blog/:id": "post-page.html",
-    "/blog/publish": "publish-page.html"
+    "/blog": {
+      "file_path": "blog-page.html"
+    },
+    "/blog/post/:id": {
+      "file_path": "post-page.html"
+    },
+    "/blog/publish": {
+      "file_path": "publish-page.html"
+    }
   }
 }

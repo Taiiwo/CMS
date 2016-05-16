@@ -130,7 +130,12 @@ function Site() {
                     $(window).trigger('auth_changed');
                 } else {
                     // whoops, wrong username or password
-                    console.log("Recieved errors: " + data.errors.map(function(d){return d.error_name}).join(", "))
+                    var error_list = [];
+                    for (var i in data.errors){
+                      var error = data.errors[i];
+                      error_list.push(error.name);
+                    }
+                    console.log("Recieved errors: " + error_list.join(', '));
                     site.toast(data.errors[0].details);
                     if (fail) {
                         fail();

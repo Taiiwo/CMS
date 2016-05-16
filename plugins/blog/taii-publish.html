@@ -1,3 +1,4 @@
+<link rel="import" href="../layout/taii-input.html" />
 <dom-module id="taii-publish">
     <template>
         <style>
@@ -28,8 +29,8 @@
                 site.route('/login');
                 return false;
             }
+            var rtm = new RTM();
             var publish = function(post){
-                var rtm = new RTM();
                 rtm.send({
                     collection: 'posts',
                     senderID_type: 'username',
@@ -39,6 +40,7 @@
                     data: post
                 });
             }
+
             site.append_stack(function(){
                 $('#post').click(function(){
                     var post = {
@@ -48,6 +50,13 @@
                     }
                     publish(post);
                 });
+            });
+
+            rtm.ws.on('data_sent', function(data){
+                console.log(data);
+            });
+            rtm.ws.on('error', function(data){
+                console.log(data);
             });
         }
     });
