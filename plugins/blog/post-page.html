@@ -1,3 +1,4 @@
+<link rel="import" href="../layout/taii-markdown.html" />
 <dom-module id="post-page" attributes="id">
     <template>
         <style>
@@ -13,11 +14,14 @@
                 width: 100%;
                 z-index: -1;
             }
+            #article h2 {
+              padding-top: 30px;
+            }
         </style>
         <div id="banner"></div>
         <div class="container">
             <div id="article" class="card">
-                <p class="flow-text" id="content"></p>
+                <span class="flow-text" id="content"></span>
             </div>
         </div>
     </template>
@@ -47,12 +51,12 @@
                     'background-image': 'url("' + data.data.image + '")'}
                 );
                 $('#article').prepend($('<h2/>')
+                    .addClass('post-page')
                     .text(data.data.title)
                 )
-                $('#content').append($('<p/>')
-                    .text(data.data.content)
-                );
-            })
+                $('#content').text(data.data.content);
+                site.markdown('#content');
+            });
         }
     });
 </script>
