@@ -1,102 +1,81 @@
+from collections import Mapping
+from xml.dom import minidom
+import time
 import requests
+import re
 
 class Payment():
 
-    def __init__(self):
-        self.login = {}
-        self.order = {}
-        self.billing = {}
-        self.shipping = {}
-        self.responses = {}
+    def __init__(self, api_key):
+        self.api_key = api_key
 
-    def login(self, username, password):
-        self.login['password'] = password
-        self.login['username'] = username
+    def dict2xml(self, structure, tostring=True):
+        def dict2element(root, structure, doc):
+            if isinstance(root, str):
+                root = doc.createElement(root)
+            for key, value in structure.items():
+                el = doc.createElement("" if key is None else key)
+                if isinstance(value, Mapping):
+                    dict2element(el, value, doc)
+                else:
+                    el.appendChild(doc.createTextNode("" if value is None
+                                                      else value))
+                root.appendChild(el)
+            return root
+        root_element_name, value = next(iter(structure.items()))
+        impl = minidom.getDOMImplementation()
+        doc = impl.createDocument(None, root_element_name, None)
+        dict2element(doc.documentElement, value, doc)
+        return doc.toxml() if tostring else doc
 
-    def set_order(self, id, description, tax, shipping, po_number, ip_adress):
-        self.order['orderid'] = id;
-        self.order['orderdescription'] = description
-        self.order['shipping'] = '{0:.2f}'.format(float(shipping))
-        self.order['ipaddress'] = ip_adress
-        self.order['tax'] = '{0:.2f}'.format(float(tax))
-        self.order['ponumber'] = po_number
-        return self.order
+    def send_dict(self, data):
+        # convert dict to XML
+        xml = self.dict2xml(data)
+        headers = {'Content-Type': 'text/xml'}
+        return requests.post(
+            'https://secure.nmi.com/api/v2/three-step',
+            data=xml,
+            headers=headers
+        ).text
 
-    def set_billing(self, first_name, last_name, company, address1, address2,
-                   city, state, zip, country, phone, fax, email, website):
-        self.billing['firstname'] = first_name
-        self.billing['lastname']  = last_name
-        self.billing['company']   = company
-        self.billing['address1']  = address1
-        self.billing['address2']  = address2
-        self.billing['city']      = city
-        self.billing['state']     = state
-        self.billing['zip']       = zip
-        self.billing['country']   = country
-        self.billing['phone']     = phone
-        self.billing['fax']       = fax
-        self.billing['email']     = email
-        self.billing['website']   = website
-        return self.billing
+    def get_xml_value(self, element, xml):
+        value = minidom.parseString(xml)\
+            .getElementsByTagName(element)[0]\
+            .firstChild\
+            .nodeValue
+        return value
 
-    def set_shipping(self, first_name, lastname, company, address1, address2,
-                    city, state, zipcode, country, email):
-        self.shipping['firstname'] = first_name
-        self.shipping['lastname']  = lastname
-        self.shipping['company']   = company
-        self.shipping['address1']  = address1
-        self.shipping['address2']  = address2
-        self.shipping['city']      = city
-        self.shipping['state']     = state
-        self.shipping['zip']       = zipcode
-        self.shipping['country']   = country
-        self.shipping['email']     = email
-        return self.shipping
-
-    def do_sale(self,amount, ccnumber, ccexp, cvv=False):
-        query = {}
-        query.update(self.login)
-        # Sales Information
-        query.update({
-            "ccnumber": ccnumber,
-            "ccexp": ccexp,
-            "amount": '{0:.2f}'.format(float(amount)),
-            "type": "sale"
-        })
-        if cvv:
-            query.update({
-                "cvv": cvv
-            })
-        # Order Information
-        query.update(self.order)
-        # Billing Information
-        query.update(self.billing)
-        # Shipping Information
-        query.update(self.shipping)
-        return self.do_post(query)
-
-    def do_post(self, query):
-        base_url = "https://secure.networkmerchants.com/api/transact.php"
-        return requests.post(base_url, query)
+    def get_url(self, amount):
+        # this is never acutally used :\
+        redirect_url = "/"
+        # construct the first stage request
+        stage_1 = {
+            "add-customer": {
+                "redirect-url": redirect_url,
+                "api-key": self.api_key
+            }
+        }
+        # send stage 1
+        stage_1_result = self.send_dict(stage_1)
+        print(stage_1_result)
+        # parse stage_1 results
+        stage_2_url = self.get_xml_value('form-url', stage_1_result)
+        # construct stage 3
+        stage_3 = {
+            "complete-action": {
+                "api-key": self.api_key,
+                "token-id": stage_2_url
+            }
+        }
+        s3r = self.send_dict(stage_3)
+        if self.get_xml_value('result', s3r) == 1:
+            # transaction was successful
+            # store token in user data for use with later purchases
+            # return token
+            pass
+        return s3r
 
 if __name__ == "__main__":
-    # NOTE: your username and password should replace the ones below
-    gw = Payment()
-    gw.login("demo", "password");
-
-    gw.set_billing("John","Smith","Acme, Inc.","123 Main St","Suite 200",
-            "Beverly Hills", "CA","90210","US","555-555-5555","555-555-5556",
-            "support@example.com", "www.example.com")
-    gw.set_shipping("Mary","Smith","na","124 Shipping Main St","Suite Ship",
-            "Beverly Hills","CA","90210","US","support@example.com")
-    gw.set_order("1234","Big Order",1,2,"PO1234","65.192.14.10")
-
-    r = gw.do_sale("5.00","4111111111111111","1212",'999')
-    print(r)
-
-    if r:
-        print("Approved")
-    elif (rpdb == 2) :
-        print "Declined"
-    elif (r == 3) :
-        print "Error"
+    # NOTE: This is not my real API key you fools
+    pm = Payment('2F822Rw39fx762MaV7Yy86jXGTC7sCDy')
+    print (pm.first_purchase('5431111111111111', '10/25', '999', '10'))

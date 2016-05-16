@@ -4,11 +4,11 @@
             /**/
         </style>
         <div class="container">
-          <json-to-form>
+          <json-to-form form-title="asdasd">
             {
-              "test": true,
-              "is_this_working": true,
-              "text_box": "hello world"
+              "card_number": "5431111111111111",
+              "card _expiry": "10/25",
+              "security_code": "999"
             }
           </json-to-form>
         </div>
@@ -18,6 +18,10 @@
     Polymer({
         is: "add-card",
         attached: function() {
+          // get the url
+          site.plugin_api('payment', 'get_url', {}, function(url){
+
+          });
         }
     });
 </script>
