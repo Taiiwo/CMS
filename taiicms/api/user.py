@@ -318,6 +318,7 @@ all_listeners = {}
 @socketio.on("listen", namespace="/component")
 def listen_handler(data):
     request_data = json.loads(data)
+    print(request_data)
     if not util.keys_exist([
                 "backlog", "sender_pair", "collection", "recipient_pairs"
             ], request_data) or \
@@ -331,7 +332,7 @@ def listen_handler(data):
         # convert recipient usernames to ids
         users = util.get_collection("users", db=util.config["auth_db"])
         for pair in request_data["recipient_pairs"]:
-            recipient = users.find_one({"user": pair[0]})
+            recipient = users.find_one({"username": pair[0]})
             if recipient and len(recipient) > 0:
                 pair[0] = str(recipient["_id"])
             else:
@@ -343,7 +344,7 @@ def listen_handler(data):
     if senderID_type == "username":
         # convert sender usernames to ids
         users = util.get_collection("users", db=util.config["auth_db"])
-        sender = users.find_one({"user": request_data["sender_pair"][0]})
+        sender = users.find_one({"username": request_data["sender_pair"][0]})
         if len(sender) > 0:
             request_data["sender_pair"][0] = str(recipient["_id"])
         else:
@@ -353,7 +354,7 @@ def listen_handler(data):
     if "recipient_senders" in request_data:
         for sender in request_data["recipient_senders"]:
             recipient_senders.append(
-                str(users.find_one({"user": sender})["_id"])
+                str(users.find_one({"username": sender})["_id"])
             )
         request_data["recipient_senders"] = recipient_senders
     # authenticate the request_data (and get a sneaky recipients list)
@@ -428,6 +429,7 @@ def listen_handler(data):
 @socketio.on("send", namespace="/component")
 def send_handler(data):
     request = json.loads(data)
+    print(data)
     # validate request
     if not "sender_pair" in request or not "recipient" in request or \
             not "collection" in request or not "data" in request:
@@ -439,7 +441,7 @@ def send_handler(data):
     message = request["data"]
     if "senderID_type" in request and request["senderID_type"] == "username":
         users = util.get_collection("users", db=util.config["auth_db"])
-        user = users.find_one({"user": sender_pair[0]})
+        user = users.find_one({"username": sender_pair[0]})
         if user:
             sender_pair[0] = str(user["_id"])
         else:
@@ -448,7 +450,7 @@ def send_handler(data):
     if "recipientID_type" in request and request["recipientID_type"] == \
             "username":
         users = util.get_collection("users", db=util.config["auth_db"])
-        user = users.find_one({"user": recipient})
+        user = users.find_one({"username": recipient})
         if user:
             recipient = str(user["_id"])
             request["recipient"] = recipient
@@ -458,6 +460,10 @@ def send_handler(data):
     # store document
     document = util.send(message, sender_pair, recipient, collection)
     if not document:
+        emit('error', make_error(
+            'unknown_error',
+            "Data was not added to the DB for some reason"
+        ))
         return False
     # send Updates
     document_tidy = {
@@ -467,8 +473,8 @@ def send_handler(data):
         "id": str(document["_id"]),
         "ts": document["ts"]
     }
-    if not util.emit_to_relevant_sockets(request, document_tidy, live_sockets):
-        emit("error", "Recipient or sender not found")
+    util.emit_to_relevant_sockets(request, document_tidy, live_sockets)
+    emit("data_sent", "Data was sent")
 
 @socketio.on("disconnect")
 def disconnect():

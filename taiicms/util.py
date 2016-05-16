@@ -201,7 +201,7 @@ class Util:
     def new_datachest(self, name, public=False):
         # build datachest document
         datachest = {
-            "user": name,
+            "username": name,
             "passw": '' if public else self.sha512(os.urandom(512)),
             "session_salt": '' if public else self.sha512(os.urandom(512)),
             "is_datachest": True
@@ -210,7 +210,7 @@ class Util:
         session_key = self.sha512(datachest['session_salt'] + datachest['passw'])
         # check if DataChest exists
         users = self.get_collection('users', db=self.config['auth_db'])
-        if users.find_one({'name': datachest['user']}):
+        if users.find_one({'username': datachest['username']}):
             return False
         # store document, creating the datachest user
         self.store(

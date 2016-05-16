@@ -44,8 +44,8 @@ if command == "datachest":
             if len(arg) < 1:
                 quit("[E] Requires one argument: datachest name")
             # check if chest with that name exists
-            users = util.get_collection('users', db=util.config['auth_db'])
-            user_exists = users.find({'user': arg[0]}).count() > 0
+            users = util.get_collection('usersname', db=util.config['auth_db'])
+            user_exists = users.find({'username': arg[0]}).count() > 0
             if user_exists:
                 quit('[E] User exists')
             public = False
@@ -77,7 +77,7 @@ if command == "datachest":
             datachest = util.get_collection(
                 'users', db=util.config['auth_db']
             ).find_one(
-                {'user': datachest}
+                {'username': datachest}
             )
             if not datachest:
                 quit("[E] Datachest does not exist")
@@ -86,8 +86,8 @@ if command == "datachest":
             )
             util.update_user(userID, {
                 "$set": {
-                    'datachests.' + datachest['user']: [
-                        datachest['user'],
+                    'datachests.' + datachest['username']: [
+                        datachest['username'],
                         datachest_session
                     ]
                 }
