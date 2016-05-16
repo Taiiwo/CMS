@@ -1,4 +1,4 @@
-<dom-module id="json-to-form">
+<dom-module id="json-to-form" attributes="form-title">
   <template>
     <style>
       div#json-editor-gui-nav {
@@ -20,7 +20,7 @@
         <nav>
           <div class="nav-wrapper">
             <div id="json-editor-gui-nav" class="col s12">
-              <a class="breadcrumb">config</a>
+              <a class="breadcrumb">{{form-title}}</a>
             </div>
           </div>
         </nav>
@@ -40,10 +40,10 @@
             <i class="large material-icons">menu</i>
           </a>
           <ul>
-            <li><a id="json-editor-gui-save-button" class="btn-floating green tooltipped"
-               data-position="left" data-tooltip="Save & Upload">
-                  <i class="material-icons">save</i>
-                </a>
+            <li>
+              <a id="json-editor-gui-save-button" class="btn-floating green tooltipped" data-position="left" data-tooltip="Save & Upload">
+                <i class="material-icons" id="submit">save</i>
+              </a>
             </li>
           </ul>
         </div>
@@ -79,10 +79,11 @@ var global_config;
   })($.fn.attr);
 
   function get_node(obj, node_id) {
-    if (node_id === "")
+    if (node_id === "") {
       return obj;
+    }
 
-    var node_names = node_id.split(",")
+    var node_names = node_id.split(",");
     var node = obj;
     node_names.forEach(function(name) {
       node = node[name];
@@ -91,7 +92,7 @@ var global_config;
   }
 
   function save_node(obj, node_id, data) {
-    split_path = node_id.split(",")
+    split_path = node_id.split(",");
     path = split_path.slice(0, split_path.length - 1).join(",");
     path = path?path:"";
     file = split_path[split_path.length - 1];
@@ -104,10 +105,11 @@ var global_config;
         break;
       case "boolean":
         if (data === "checked" || data === "unchecked"){
-          data = (data === "checked")?true:false;
+          data = (data === "checked")? true : false;
           break;
-        } else {
-          data = data?true:false;
+        }
+        else {
+          data = data? true : false;
           break;
         }
     }
@@ -125,7 +127,7 @@ var global_config;
   }
 
   function reset_nav() {
-    var nav = $("#json-editor-gui-nav").empty()
+    var nav = $("#json-editor-gui-nav").empty();
     return nav.append($("<a>").addClass("breadcrumb")
                               .attr("data-nodepath", "")
                               .attr("href", "#!")
@@ -136,13 +138,13 @@ var global_config;
 
   function keyup_value_editor(event) {
     if (event.keyCode == 13 || event.keyCode == 27) { // enter or esc
-      $(this).blur()
+      $(this).blur();
     }
   }
 
   function checkbox_change(event) {
-    value = get_node(global_config, $(this).attr("data-nodepath"))
-    save_node(global_config, $(this).attr("data-nodepath"), !value)
+    value = get_node(global_config, $(this).attr("data-nodepath"));
+    save_node(global_config, $(this).attr("data-nodepath"), !value);
     return true;
   }
 
