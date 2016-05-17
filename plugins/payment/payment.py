@@ -1,13 +1,27 @@
 from collections import Mapping
 from xml.dom import minidom
+
 import time
 import requests
 import re
+import xmltodict
+
+from flask import url_for, request
 
 class Payment():
-
-    def __init__(self, api_key):
-        self.api_key = api_key
+    redirect_url = "/"
+    def __init__(self, payments_config, app):
+        self.api_key = payments_config["nmi"]["api_key"]
+        self.username = payments_config["nmi"]["username"]
+        self.username = payments_config["nmi"]["password"]
+        
+        app.add_url_rule(
+            "/plugins/payments/nmi_callback",
+            view_func=self.step_two_callback,
+            methods=["POST", "GET"]
+        )
+        self.redirect_url = "http://localhost:5000/plugins/payments/nmi_callback"
+        self.tokens = {}
 
     def dict2xml(self, structure, tostring=True):
         def dict2element(root, structure, doc):
@@ -45,37 +59,48 @@ class Payment():
             .nodeValue
         return value
 
-    def get_url(self, amount):
-        # this is never acutally used :\
-        redirect_url = "/"
-        # construct the first stage request
-        stage_1 = {
+    def step_one(self):
+        data = {
             "add-customer": {
-                "redirect-url": redirect_url,
+                "redirect-url": self.redirect_url,
                 "api-key": self.api_key
             }
         }
-        # send stage 1
-        stage_1_result = self.send_dict(stage_1)
-        print(stage_1_result)
-        # parse stage_1 results
-        stage_2_url = self.get_xml_value('form-url', stage_1_result)
-        # construct stage 3
-        stage_3 = {
-            "complete-action": {
-                "api-key": self.api_key,
-                "token-id": stage_2_url
-            }
-        }
-        s3r = self.send_dict(stage_3)
-        if self.get_xml_value('result', s3r) == 1:
-            # transaction was successful
-            # store token in user data for use with later purchases
-            # return token
-            pass
-        return s3r
+        print(data)
+        res = requests.post(
+            "https://secure.nmi.com/api/v2/three-step",
+            self.dict2xml(data),
+            headers={"Content-Type": "text/xml"}
+        )
+        return self.get_xml_value('form-url', res.text)
 
-if __name__ == "__main__":
-    # NOTE: This is not my real API key you fools
-    pm = Payment('2F822Rw39fx762MaV7Yy86jXGTC7sCDy')
-    print (pm.first_purchase('5431111111111111', '10/25', '999', '10'))
+
+    def step_two_callback(self):
+        token_id = request.args.get("token-id")
+        res = self.step_three(token_id)
+        if res["response"]["result"] == "1":
+            return self.do_transaction(1, res["response"]["customer-vault-id"])
+        return "some Error"
+
+    def step_three(self, token_id):
+        res = self.send_dict({
+            "complete-action": {
+                "api-key": '2F822Rw39fx762MaV7Yy86jXGTC7sCDy',
+                "token-id": token_id
+            }
+        })
+        data = xmltodict.parse(res)
+
+        return data
+
+    def do_transaction(self, amount, vault):
+        print("%.2f" % amount)
+        return requests.post(
+            "https://secure.networkmerchants.com/api/transact.php",
+            {
+                "customer_vault_id": vault,
+                "username": "demo",
+                "password": "password",
+                "amount": "%.2f" % amount
+            }
+        ).text
