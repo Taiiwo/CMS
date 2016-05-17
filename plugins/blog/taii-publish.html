@@ -1,7 +1,5 @@
 <link rel="import" href="../layout/taii-input.html" />
 <script src="js/bs.js"></script>
-<script src="js/vocab.js"></script>
-<script src="js/patterns.js"></script>
 <dom-module id="taii-publish">
     <template>
         <style>
@@ -46,8 +44,6 @@
                 });
             }
 
-            bs.initializeSentencePool();
-
             site.append_stack(function(){
                 $('#post').click(function(){
                     var post = {
@@ -58,30 +54,32 @@
                     publish(post);
                 });
                 $('#makebs').click(function(){
-                  var topic = 0;
-                  $('#title').val(bs.generateText(1, topic));
+                  var bsi = new BS();
+                  bsi.initializeSentencePool();
+                  var topic = kit.randomInt(bsi.sentencePatterns.length - 1);
+                  $('#title').val(bsi.generateText(1, topic));
                   var content = "";
                   // 7 sentences
-                  content += bs.generateText(7, topic);
+                  content += bsi.generateText(7, topic);
                   content += '\n\n';
                   // an image
                   content += '![nature](http://placeimg.com/640/480/nature?';
                   content += Math.floor(Math.random() * 100);
                   content += ")\n\n";
                   // two more paragraphs
-                  content += bs.generateText(8, topic);
+                  content += bsi.generateText(8, topic);
                   content += '\n\n';
-                  content += bs.generateText(6, topic);
+                  content += bsi.generateText(6, topic);
                   content += '\n\n';
                   // another image
                   content += '![nature](http://placeimg.com/640/480/nature?';
                   content += Math.floor(Math.random() * 100);
                   content += ")\n\n";
                   // a final paragraph
-                  content += bs.generateText(6, topic);
+                  content += bsi.generateText(6, topic);
                   content += '\n\n';
                   // A summary
-                  content += bs.generateText(3, topic);
+                  content += bsi.generateText(3, topic);
                   content += '\n\n';
                   $('#content').val(content);
                   var image_url = 'http://placeimg.com/640/480/nature?' +
