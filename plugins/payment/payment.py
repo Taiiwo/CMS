@@ -18,8 +18,8 @@ class Payment():
                 if isinstance(value, Mapping):
                     dict2element(el, value, doc)
                 else:
-                    el.appendChild(doc.createTextNode("" if value is None
-                                                      else value))
+                    value = "" if value is None else value
+                    el.appendChild(doc.createTextNode(value))
                 root.appendChild(el)
             return root
         root_element_name, value = next(iter(structure.items()))
