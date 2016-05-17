@@ -429,7 +429,6 @@ def listen_handler(data):
 @socketio.on("send", namespace="/component")
 def send_handler(data):
     request = json.loads(data)
-    print(data)
     # validate request
     if not "sender_pair" in request or not "recipient" in request or \
             not "collection" in request or not "data" in request:
