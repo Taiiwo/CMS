@@ -1,11 +1,29 @@
 import os
 import json
+import importlib
+import pip
+import sys
 
 from flask import send_from_directory, abort, render_template
 
-from . import app, config, save_config, site, merge_dicts
+from . import app, config, save_config, site, merge_dicts, root_logger
+
+
+logger = root_logger.getChild("plugins")
+
+
+IS_VIRTUAL_ENV = hasattr(sys, "real_prefix")
+if not IS_VIRTUAL_ENV:
+    logger.info("Running outside virtualenv... Creating own modules folder")
+    IMPORT_PATH = os.path.abspath("./imports")
+    os.makedirs(IMPORT_PATH, exist_ok=True)
+    sys.path.append(IMPORT_PATH)
+else:
+    IMPORT_PATH = None
+
 
 plugins = {}
+
 
 def refresh_plugins():
     global plugins
@@ -64,10 +82,28 @@ def load_plugin(plugin_name):
     if plugin_name not in plugins:
         refresh_plugins()
         if plugin_name not in plugins:
-            raise ValueError("%s does not exist.")
+            raise ValueError("Plugin '%s' does not exist but was specified in the config.")
 
     plugin = plugins[plugin_name]
     if os.path.exists(os.path.join("plugins", plugin_name, "__init__.py")):
+        if "module_requirements" in plugin:
+            logger.info("Installing modules for %s." % plugin_name)
+            for req, link in plugin["module_requirements"].items():
+                # check if req is already installed
+                if importlib.util.find_spec(req) is None:
+                    logger.warn("Could not find '%s'. Installing via pip..." % req)
+
+                    args = ["install", link]
+                    if not IS_VIRTUAL_ENV:
+                        args.append("--target=%s" % "./imports")
+
+                    result = pip.main(args)
+                    if result != 0:
+                        logger.error("Could not install '%s'. Disabling plugin." % req)
+                        config["plugins"][plugin_name]["enabled"] = False
+                        save_config()
+                        return
+
         plugin["import"] = getattr(__import__("plugins.%s" % plugin_name), plugin_name)
         plugin["import"].main(plugin["config"])
 
