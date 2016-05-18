@@ -1,3 +1,7 @@
 {
-  "nmi_api_key": ""
+  "nmi": {
+    "api_key": "2F822Rw39fx762MaV7Yy86jXGTC7sCDy",
+    "username": "demo",
+    "password": "password"
+    }
 }

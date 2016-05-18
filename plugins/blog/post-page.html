@@ -56,7 +56,10 @@
                 )
                 $('#content').text(data.data.content);
                 site.markdown('#content');
-            });
+                rtm.ws.on('error', function(data){
+                  console.log(data);
+                });
+            })
         }
     });
 </script>

@@ -10,32 +10,33 @@
     </template>
 </dom-module>
 <script>
-    Polymer({
-        is: "taii-grid",
-        attached: function(){
-            this.wall = new Freewall('#grid');
-            var self = this;
-            this.wall.reset({
+  Polymer({
+    is: "taii-grid",
+    attached: function(){
+      this.wall = new Freewall('#grid');
+      var self = this;
+      this.wall.reset({
 				selector: '.card',
 				cellW: '270',
 				cellH: 'auto',
-                fixSize: 0,
-                animate: true,
+        fixSize: 0,
+        animate: true,
 				onResize: function() {
-                    self.wall.fitWidth();
+          self.wall.fitWidth();
 				}
-			});
+      });
 			// caculator height for IE7;
-            self.wall.fitWidth();
+      self.wall.fitWidth();
 			$(window).trigger("resize");
-        },
-        append_grid: function(div){
-            var self = this;
-            div.find('img').load(function() {
-                self.wall.fitWidth();
-            });
-            this.wall.prepend(div);
-            this.wall.fitWidth();
-        }
-    })
+    },
+    append_grid: function(div){
+        var self = this;
+        div.find('img').load(function() {
+          self.wall.fitWidth();
+        });
+        div.attr('data-width', '270');
+        this.wall.prepend(div);
+        this.wall.fitWidth();
+    }
+  });
 </script>

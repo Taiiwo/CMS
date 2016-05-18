@@ -1,4 +1,5 @@
-from taiicms import app, socketio, config
+from taiicms import app, socket, config
+
 
 def main():
     socketio.run(app, config["bind_addr"], config["port"], debug=config["debug"])
