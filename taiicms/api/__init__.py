@@ -1,10 +1,11 @@
 from flask import make_response, jsonify
 from flask.ext.cors import CORS
 
-from .errors import error_names, add_error
 from .. import app, util, config, root_logger
 
 api_logger = root_logger.getChild("api")
+
+from .errors import error_names, add_error
 
 # CORS(app)  # make app work across origins
 util = util.Util(config["mongo"])
@@ -96,10 +97,11 @@ def make_error(error_name, extra_detail=None):
 
 has_warned = False
 def make_error_response(*args, **kwargs):
+    global has_warned
     if not has_warned:
         api_logger.warn("`make_error_response(<error>)` is deprecated. Use `raise <error>()` instead")
         has_warned = True
-    
+
     error_res = make_error(*args, **kwargs)
     res = make_response(jsonify(error_res), 200)
     return res
