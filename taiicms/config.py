@@ -7,6 +7,8 @@ from . import app
 DEFAULT_CONFIG_PATH = "./config.json"
 
 default_config = {
+    "allow_config_writing": True,
+
     "secret_key": b2a_hex(urandom(32)).decode("utf8"),
     "port": 5000,
     "bind_addr": "0.0.0.0",
@@ -49,20 +51,21 @@ def merge_dicts(a, b):
     return new_dict
 
 
-def save_config(file_path=DEFAULT_CONFIG_PATH, config_dict=None):
+def save_config(file_path=DEFAULT_CONFIG_PATH, config_dict=None, force=False):
     global config
     if config_dict is None:
         config_dict = config
     else:
         config = config_dict
 
-    json.dump(
-        config_dict,
-        open(file_path, "w"),
-        sort_keys = True,
-        indent = 2,
-        separators = (',', ': ')
-    )
+    if config["allow_config_writing"] or force:
+        json.dump(
+            config_dict,
+            open(file_path, "w"),
+            sort_keys = True,
+            indent = 2,
+            separators = (',', ': ')
+        )
 
 
 try:

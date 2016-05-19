@@ -8,5 +8,8 @@
     "/add-card": {
       "file_path": "add-card.html"
     }
+  },
+  "module_requirements": {
+    "xmltodict": "xmltodict"
   }
 }

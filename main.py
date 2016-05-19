@@ -1,4 +1,8 @@
 from taiicms import app, socket, config
 
-if __name__ == "__main__":
+
+def main():
     socket.run(app, config["bind_addr"], config["port"], debug=config["debug"])
+
+if __name__ == "__main__":
+    main()
