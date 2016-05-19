@@ -32,6 +32,32 @@ class ApiError(Exception):
                 "status_code": self.status_code,
             }
 
+
+class UnknownError(ApiError):
+    name = "unknown_error"
+    details = "We don't know what happened... but it was bad."
+    status_code = 500
+
+
+class JsonInvalid(ApiError):
+    name = "json_invalid"
+    details = "The JSON recieved was invalid."
+
+
+class DataInvalid(ApiError):
+    name = "data_invalid"
+    details = "A field contained invalid data."
+    status_code = 400
+
+    def __init__(self, field):
+        self.data = {"field": field}
+
+
+class DataRequired(DataInvalid):
+    name = "data_required"
+    details = "A required field was missing."
+
+
 @app.errorhandler(ApiError)
 def api_exception_handler(e):
     error_data = e.to_dict()

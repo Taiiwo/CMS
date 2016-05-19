@@ -12,7 +12,17 @@ from bson.objectid import ObjectId
 from pymongo.errors import DuplicateKeyError
 
 from .. import app, config
-from . import util, make_error_response, make_success_response, ApiError
+from . import (
+    util,
+    make_error_response,
+    make_success_response,
+    ApiError,
+    UnknownError,
+    DataInvalid,
+    DataRequired,
+    JsonInvalid
+)
+
 
 users = util.get_collection("users", db=util.config["auth_db"])
 users.create_index("username", unique=True)
@@ -159,7 +169,7 @@ def api_register():
         username = request.form["username"]
         password = request.form["password"]
     except KeyError as e:
-        return make_error_response("data_required", e.args[0])
+        raise DataRequired(e.args[0])
 
     # get optional fields
     try:
@@ -167,16 +177,16 @@ def api_register():
         try:
             details = json.loads(details)
         except json.JSONDecodeError:
-            return make_error_response("json_invalid")
+            raise JsonInvalid()
     except KeyError:
         details = {}
 
 
     # validate the username and password
     if not (4 <= len(username) <= 140):
-        return make_error_response("data_invalid", "username")
+        raise DataInvalid("username")
     if not (6 <= len(password)):
-        return make_error_response("data_invalid", "password")
+        raise DataInvalid("password")
 
     # create the user object
     user_data = create_user(username, password, details)
@@ -197,7 +207,7 @@ def api_login():
         username = request.form["username"]
         password = request.form["password"]
     except KeyError as e:
-        return make_error_response("data_required", e.args[0])
+        raise DataRequired(e.args[0])
 
     # find the user in the collection
     user_data = users.find_one({"username": username.lower()})
@@ -233,7 +243,7 @@ def api_change_password():
         cur_password = request.form["cur_password"]
         new_password = request.form["new_password"]
     except KeyError as e:
-        return make_error_response("data_required", e.args)
+        raise DataRequired(e.args[0])
 
     # Make sure the user is logged in
     user_data = authenticate()
@@ -293,7 +303,7 @@ def get_uid():
     try:
         username = request.args["username"]
     except KeyError as e:
-        return make_error_response("data_required", e.args)
+        raise DataRequired(e.args[0])
 
     user_data = users.find_one({"username": username.lower()}, {"_id": True})
     if not user_data:
@@ -308,7 +318,7 @@ def update_user():
     try:
         new_details = request.form["new_details"]
     except KeyError as e:
-        return make_error_response("missing_data", e.args)
+        raise DataRequired(e.args[0])
 
     user_data = authenticate()
     if not user_data:
@@ -324,4 +334,4 @@ def update_user():
     if util.update_user(user["_id"], update_query):
         return make_success_response()
     else:
-        return make_error_response("unknown_error")
+        raise UnknownError()
