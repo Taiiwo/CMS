@@ -12,30 +12,10 @@ class Payment():
         self.username = payments_config["nmi"]["username"]
         self.password = payments_config["nmi"]["password"]
 
-    # Converts a Python dict to an XML formatted string
-    def dict2xml(self, structure, tostring=True):
-        def dict2element(root, structure, doc):
-            if isinstance(root, str):
-                root = doc.createElement(root)
-            for key, value in structure.items():
-                el = doc.createElement("" if key is None else key)
-                if isinstance(value, Mapping):
-                    dict2element(el, value, doc)
-                else:
-                    value = "" if value is None else value
-                    el.appendChild(doc.createTextNode(value))
-                root.appendChild(el)
-            return root
-        root_element_name, value = next(iter(structure.items()))
-        impl = minidom.getDOMImplementation()
-        doc = impl.createDocument(None, root_element_name, None)
-        dict2element(doc.documentElement, value, doc)
-        return doc.toxml() if tostring else doc
-
     # Takes a Python dict and sends it to the API as XML
     def send_dict(self, data):
         # convert dict to XML
-        xml = self.dict2xml(data)
+        xml = xmltodict.unparse(data)
         headers = {'Content-Type': 'text/xml'}
         return requests.post(
             'https://secure.nmi.com/api/v2/three-step',
@@ -60,7 +40,7 @@ class Payment():
             }
         }
         res = self.send_dict(data)
-        return self.get_xml_value('form-url', res)
+        return xmltodict.parse(res)['response']['form-url']
 
     # Can be called from within a flask route to respond as the redirect page
     def form_url_callback(self, request):
