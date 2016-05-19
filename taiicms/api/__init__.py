@@ -67,8 +67,6 @@ def api_exception_handler(e):
     })
 
 
-
-
 def make_success_response(extra={}):
     data_res = extra
     data_res["success"] = True
@@ -95,7 +93,13 @@ def make_error(error_name, extra_detail=None):
     return res
 
 
+
+has_warned = False
 def make_error_response(*args, **kwargs):
+    if not has_warned:
+        api_logger.warn("`make_error_response(<error>)` is deprecated. Use `raise <error>()` instead")
+        has_warned = True
+    
     error_res = make_error(*args, **kwargs)
     res = make_response(jsonify(error_res), 200)
     return res
