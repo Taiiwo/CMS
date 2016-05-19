@@ -2,10 +2,45 @@ from flask import make_response, jsonify
 from flask.ext.cors import CORS
 
 from .errors import error_names, add_error
-from .. import app, util, config
+from .. import app, util, config, root_logger
 
-CORS(app)  # make app work across origins
+api_logger = root_logger.getChild("api")
+
+# CORS(app)  # make app work across origins
 util = util.Util(config["mongo"])
+
+
+class ApiError(Exception):
+    name = "api_error"
+    details = "Something wrong happened with the data you send to the API."
+    status_code = 200
+    def __init__(self, data=None):
+        self.data = data
+
+    def to_dict(self):
+        if self.data:
+            return {
+                "name": self.name,
+                "details": self.details,
+                "data": self.data,
+                "status_code": self.status_code,
+            }
+        else:
+            return {
+                "name": self.name,
+                "details": self.details,
+                "status_code": self.status_code,
+            }
+
+@app.errorhandler(ApiError)
+def api_exception_handler(e):
+    error_data = e.to_dict()
+    return jsonify({
+        "success": False,
+        "errors": [error_data]
+    })
+
+
 
 
 def make_success_response(extra={}):

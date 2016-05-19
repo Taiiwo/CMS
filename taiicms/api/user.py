@@ -12,10 +12,45 @@ from bson.objectid import ObjectId
 from pymongo.errors import DuplicateKeyError
 
 from .. import app, config
-from . import util, make_error_response, make_success_response
+from . import util, make_error_response, make_success_response, ApiError
 
 users = util.get_collection("users", db=util.config["auth_db"])
 users.create_index("username", unique=True)
+# users.create_index("")
+
+##############################
+# All the user api related expceptions go here.
+##############################
+
+class LoginRequired(ApiError):
+    name = "login_required"
+    details = "The resource requested requires authentication."
+    status_code = 403
+
+
+class LoginInvalid(ApiError):
+    name = "login_invalid"
+    details = "The username and password did not match."
+
+
+class UsernameTaken(ApiError):
+    name = "username_taken"
+    details = "The username has been taken."
+
+
+class UserNotFound(ApiError):
+    name = "user_not_found"
+    details = "The specified user could not be found."
+
+
+class PasswordIncorrect(ApiError):
+    name = "password_incorrect",
+    details = "Password given was incorrect."
+
+##############################
+# End user exceptions
+##############################
+
 
 def get_hash(data, as_hex=True):
     hasher = sha512()
@@ -92,7 +127,6 @@ def create_session(user_data):
             "$set": {"session_salt": session_salt}
         }
     )
-    print(session_salt)
 
     # construct a session key from the salt
     session_key = hash_password(user_data["passhash"], session_salt)
@@ -150,7 +184,7 @@ def api_register():
         # store the user
         users.insert(user_data)
     except DuplicateKeyError: # if username is not unique
-        return make_error_response("username_taken")
+        raise UsernameTaken({"username": username})
 
     # user created, log the user in
     return api_login()
@@ -168,11 +202,11 @@ def api_login():
     # find the user in the collection
     user_data = users.find_one({"username": username.lower()})
     if user_data is None:
-        return make_error_response("login_invalid")
+        raise LoginInvalid()
 
     # check their password
     if not check_password(user_data, password):
-        return make_error_response("login_invalid")
+        raise LoginInvalid()
 
     # don"t create dynamic session keys for datachests
     if not user_data["is_datachest"]:
@@ -204,12 +238,12 @@ def api_change_password():
     # Make sure the user is logged in
     user_data = authenticate()
     if not user_data:
-        return make_error_response("login_required")
+        raise LoginRequired()
 
     # check if the old password matches the current password
     # it should be, but just in case they're cookie stealing
     if not check_password(user_data, cur_password):
-        return make_error_response("password_incorrect")
+        raise PasswordIncorrect()
 
     # update the user
     salt = gen_salt(as_hex=False)
@@ -236,7 +270,7 @@ def api_change_password():
 def api_delete_account():
     user_data = authenticate()
     if not user_data:
-        return make_error_response("login_required")
+        raise LoginRequired()
 
     users.delete_one({"_id": ObjectId(user_data["_id"])})
     return make_success_response({"message": "T^T"})
@@ -247,7 +281,7 @@ def api_delete_account():
 def api_authenticate():
     user_data = authenticate()
     if not user_data:
-        return make_error_response("login_required")
+        raise LoginRequired()
 
     safe_user_data = get_safe_user(user_data)
     return make_success_response({"user_data": safe_user_data})
@@ -263,7 +297,7 @@ def get_uid():
 
     user_data = users.find_one({"username": username.lower()}, {"_id": True})
     if not user_data:
-        return make_error_response("user_not_found")
+        raise UserNotFound()
 
     return make_success_response({"id": str(user_data["_id"])})
 
@@ -278,7 +312,7 @@ def update_user():
 
     user_data = authenticate()
     if not user_data:
-        return make_error_response("login_required")
+        raise LoginRequired()
 
     #   User is authed, do some stuff
     new_details = json.loads(new_details)
