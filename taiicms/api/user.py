@@ -3,7 +3,7 @@ import re
 import time
 import json
 
-from flask import request, jsonify
+from flask import request, jsonify, url_for
 
 from binascii import b2a_hex, a2b_hex
 from hashlib import sha512
@@ -49,8 +49,36 @@ def check_password(user_data, password):
     passhash = hash_password(password, pass_salt)
     return passhash == user_data["passhash"]
 
+def send_email_verification(request, uid, email):
+    # create a verification key
+    key = gen_salt(as_hex=True)
+    path = "/%s/%s" % (uid, key.decode('ascii'))
+    import smtplib
+    from email.mime.text import MIMEText
+    msg = """
+        I don't have time for fancy emails. Verify you email here: %s
+    """ % request.url_root + path
+    msg = MIMEText(message)
+    msg['Subject'] = "Verify your Email!"
+    msg['From'] = "webmaster@llort.gq"
+    msg['To'] = email
+    smtp = smtplib.SMTP('localhost')
+    smtp.sendmail("webmaster@llort.gq", email, msg.as_string())
+    return True
 
-def create_user(username, password, details={}, session_salt=None, is_datachest=False):
+@app.route('/verify-email/<string:uid>/<string:verification_key>')
+def verify_email(uid, verification_key):
+    user = users.find_one({"_id": uid, "email_verification": verification_key})
+    if user:
+        # set email_verified = True
+        # remove email_verification
+        user.update({
+            "$set": {"email_verified": True},
+            "$unset": {"email_verification": ""}
+        })
+
+def create_user(username, password, details={}, session_salt=None,
+                is_datachest=False, email=False):
     salt = gen_salt(as_hex=False)
     salt_hex = b2a_hex(salt)
     passhash = hash_password(password, salt)
@@ -68,6 +96,8 @@ def create_user(username, password, details={}, session_salt=None, is_datachest=
             "public": ["Public", get_hash(b"")],  # add public session
         },
     }
+    if email:
+        user_data['email'] = email
     return user_data
 
 
@@ -80,7 +110,6 @@ def get_safe_user(user):
     else:
         user = util.get_collection("users", db=util.config["auth_db"]).find_one({"user": user})
         return user
-
 
 def create_session(user_data):
     # create a salt so the same session key is only valid once
@@ -97,7 +126,6 @@ def create_session(user_data):
     # construct a session key from the salt
     session_key = hash_password(user_data["passhash"], session_salt)
     return session_key
-
 
 def authenticate(user_id=None, session=None):
     if user_id is None or session is None:
@@ -116,7 +144,6 @@ def authenticate(user_id=None, session=None):
         return None
     return user_data
 
-
 # Registers a new user and logs them in
 @app.route("/api/1/register", methods=["POST"])
 def api_register():
@@ -124,6 +151,15 @@ def api_register():
     try:
         username = request.form["username"]
         password = request.form["password"]
+        # if no email is submitted and emails are enforced
+        if not "email" in request.form and config['force_email_submission']:
+            return make_error_response('data_required', 'email')
+        # if emails are not enforced, but one is supplied anyway
+        elif "email" in request.form:
+            email = request.form["email"]
+        # if emails are not enforced and none is supplied
+        else:
+            email = False
     except KeyError as e:
         return make_error_response("data_required", e.args[0])
 
@@ -136,8 +172,10 @@ def api_register():
             return make_error_response("json_invalid")
     except KeyError:
         details = {}
-
-
+    # test if email is unique
+    email_query = {"email": email}
+    if config['emails_are_unique'] and users.find_one(email_query):
+        return make_error_response("data_invalid", "email taken")
     # validate the username and password
     if not (4 <= len(username) <= 140):
         return make_error_response("data_invalid", "username")
@@ -145,13 +183,14 @@ def api_register():
         return make_error_response("data_invalid", "password")
 
     # create the user object
-    user_data = create_user(username, password, details)
+    user_data = create_user(username, password, details, email=email)
     try:
         # store the user
-        users.insert(user_data)
+        user_data = users.insert(user_data)
     except DuplicateKeyError: # if username is not unique
         return make_error_response("username_taken")
 
+    send_email_verification(request, user_data['_id'], email)
     # user created, log the user in
     return api_login()
 
