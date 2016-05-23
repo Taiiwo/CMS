@@ -9,7 +9,7 @@ DEFAULT_CONFIG_PATH = "./config.json"
 default_config = {
     "allow_config_writing": True,
     "force_email_submission": False,
-    #"allow_login_with_email": False,
+    "allow_login_with_email": False,
     "verify_emails": True,
     "secret_key": b2a_hex(urandom(32)).decode("utf8"),
     "emails_are_unique": True,
