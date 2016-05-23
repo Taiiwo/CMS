@@ -53,12 +53,19 @@ def send_email_verification(request, uid, email):
     # create a verification key
     key = gen_salt(as_hex=True)
     path = "/%s/%s" % (uid, key.decode('ascii'))
+    users.update(
+        {"_id": ObjectId(uid)},
+        {"$set": {
+            "email_verification": key,
+            "email_verified": False
+        }}
+    )
     import smtplib
     from email.mime.text import MIMEText
     msg = """
         I don't have time for fancy emails. Verify you email here: %s
     """ % request.url_root + path
-    msg = MIMEText(message)
+    msg = MIMEText(msg)
     msg['Subject'] = "Verify your Email!"
     msg['From'] = "webmaster@llort.gq"
     msg['To'] = email
@@ -68,7 +75,9 @@ def send_email_verification(request, uid, email):
 
 @app.route('/verify-email/<string:uid>/<string:verification_key>')
 def verify_email(uid, verification_key):
-    user = users.find_one({"_id": uid, "email_verification": verification_key})
+    user = users.find_one(
+        {"_id": ObjectId(uid), "email_verification": verification_key}
+    )
     if user:
         # set email_verified = True
         # remove email_verification
@@ -97,7 +106,7 @@ def create_user(username, password, details={}, session_salt=None,
         },
     }
     if email:
-        user_data['email'] = email
+        user_data['email'] = email.lower()
     return user_data
 
 
@@ -187,10 +196,11 @@ def api_register():
     try:
         # store the user
         user_data = users.insert(user_data)
-    except DuplicateKeyError: # if username is not unique
+    except DuplicateKeyError as e: # if username is not unique
+        print (e.args)
         return make_error_response("username_taken")
-
-    send_email_verification(request, user_data['_id'], email)
+    if config['verify_emails']:
+        send_email_verification(request, user_data, email)
     # user created, log the user in
     return api_login()
 
@@ -199,13 +209,21 @@ def api_register():
 @app.route("/api/1/login", methods=["POST"])
 def api_login():
     try:
-        username = request.form["username"]
+        email_login = False
+        if not "username" in request.form and config['allow_login_with_email']:
+            email = request.form['email']
+            email_login = True
+        else:
+            username = request.form["username"]
         password = request.form["password"]
     except KeyError as e:
         return make_error_response("data_required", e.args[0])
 
     # find the user in the collection
-    user_data = users.find_one({"username": username.lower()})
+    if email_login:
+        user_data = users.find_one({"email": email.lower()})
+    else:
+        user_data = users.find_one({"username": username.lower()})
     if user_data is None:
         return make_error_response("login_invalid")
 
@@ -213,7 +231,7 @@ def api_login():
     if not check_password(user_data, password):
         return make_error_response("login_invalid")
 
-    # don"t create dynamic session keys for datachests
+    # don't create dynamic session keys for datachests
     if not user_data["is_datachest"]:
         session_key = create_session(user_data)
 
