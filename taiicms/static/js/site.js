@@ -106,12 +106,19 @@ function Site() {
         }
     }
     this.login = function(username, password, success, fail){
+        // if the username matches a email regex, send it as 'email'
+        var request = {};
+        if (username.match('.*@.*')){
+          // username is an email
+          request.email = username;
+        }
+        else {
+          request.username = username;
+        }
+        request.password = password;
         this.api(
             "login",
-            {
-                username: username,
-                password: password
-            },
+            request,
             function(data) {
                 // if the login was successful
                 if (data.success) {
