@@ -12,10 +12,55 @@ from bson.objectid import ObjectId
 from pymongo.errors import DuplicateKeyError
 
 from .. import app, config
-from . import util, make_error_response, make_success_response
+from . import (
+    util,
+    make_error_response,
+    make_success_response,
+    ApiError,
+    UnknownError,
+    DataInvalid,
+    DataRequired,
+    JsonInvalid
+)
+
 
 users = util.get_collection("users", db=util.config["auth_db"])
 users.create_index("username", unique=True)
+# users.create_index("")
+
+##############################
+# All the user api related expceptions go here.
+##############################
+
+class LoginRequired(ApiError):
+    name = "login_required"
+    details = "The resource requested requires authentication."
+    status_code = 403
+
+
+class LoginInvalid(ApiError):
+    name = "login_invalid"
+    details = "The username and password did not match."
+
+
+class UsernameTaken(ApiError):
+    name = "username_taken"
+    details = "The username has been taken."
+
+
+class UserNotFound(ApiError):
+    name = "user_not_found"
+    details = "The specified user could not be found."
+
+
+class PasswordIncorrect(ApiError):
+    name = "password_incorrect",
+    details = "Password given was incorrect."
+
+##############################
+# End user exceptions
+##############################
+
 
 def get_hash(data, as_hex=True):
     hasher = sha512()
@@ -130,7 +175,6 @@ def create_session(user_data):
             "$set": {"session_salt": session_salt}
         }
     )
-    print(session_salt)
 
     # construct a session key from the salt
     session_key = hash_password(user_data["passhash"], session_salt)
@@ -170,7 +214,7 @@ def api_register():
         else:
             email = False
     except KeyError as e:
-        return make_error_response("data_required", e.args[0])
+        raise DataRequired(e.args[0])
 
     # get optional fields
     try:
@@ -178,7 +222,7 @@ def api_register():
         try:
             details = json.loads(details)
         except json.JSONDecodeError:
-            return make_error_response("json_invalid")
+            raise JsonInvalid()
     except KeyError:
         details = {}
     # test if email is unique
@@ -187,9 +231,9 @@ def api_register():
         return make_error_response("data_invalid", "email taken")
     # validate the username and password
     if not (4 <= len(username) <= 140):
-        return make_error_response("data_invalid", "username")
+        raise DataInvalid("username")
     if not (6 <= len(password)):
-        return make_error_response("data_invalid", "password")
+        raise DataInvalid("password")
 
     # create the user object
     user_data = create_user(username, password, details, email=email)
@@ -198,7 +242,7 @@ def api_register():
         user_data = users.insert(user_data)
     except DuplicateKeyError as e: # if username is not unique
         print (e.args)
-        return make_error_response("username_taken")
+        raise UsernameTaken({"username": username})
     if config['verify_emails']:
         send_email_verification(request, user_data, email)
     # user created, log the user in
@@ -217,7 +261,7 @@ def api_login():
             username = request.form["username"]
         password = request.form["password"]
     except KeyError as e:
-        return make_error_response("data_required", e.args[0])
+        raise DataRequired(e.args[0])
 
     # find the user in the collection
     if email_login:
@@ -225,11 +269,11 @@ def api_login():
     else:
         user_data = users.find_one({"username": username.lower()})
     if user_data is None:
-        return make_error_response("login_invalid")
+        raise LoginInvalid()
 
     # check their password
     if not check_password(user_data, password):
-        return make_error_response("login_invalid")
+        raise LoginInvalid()
 
     # don't create dynamic session keys for datachests
     if not user_data["is_datachest"]:
@@ -256,17 +300,17 @@ def api_change_password():
         cur_password = request.form["cur_password"]
         new_password = request.form["new_password"]
     except KeyError as e:
-        return make_error_response("data_required", e.args)
+        raise DataRequired(e.args[0])
 
     # Make sure the user is logged in
     user_data = authenticate()
     if not user_data:
-        return make_error_response("login_required")
+        raise LoginRequired()
 
     # check if the old password matches the current password
     # it should be, but just in case they're cookie stealing
     if not check_password(user_data, cur_password):
-        return make_error_response("password_incorrect")
+        raise PasswordIncorrect()
 
     # update the user
     salt = gen_salt(as_hex=False)
@@ -293,7 +337,7 @@ def api_change_password():
 def api_delete_account():
     user_data = authenticate()
     if not user_data:
-        return make_error_response("login_required")
+        raise LoginRequired()
 
     users.delete_one({"_id": ObjectId(user_data["_id"])})
     return make_success_response({"message": "T^T"})
@@ -304,7 +348,7 @@ def api_delete_account():
 def api_authenticate():
     user_data = authenticate()
     if not user_data:
-        return make_error_response("login_required")
+        raise LoginRequired()
 
     safe_user_data = get_safe_user(user_data)
     return make_success_response({"user_data": safe_user_data})
@@ -316,11 +360,11 @@ def get_uid():
     try:
         username = request.args["username"]
     except KeyError as e:
-        return make_error_response("data_required", e.args)
+        raise DataRequired(e.args[0])
 
     user_data = users.find_one({"username": username.lower()}, {"_id": True})
     if not user_data:
-        return make_error_response("user_not_found")
+        raise UserNotFound()
 
     return make_success_response({"id": str(user_data["_id"])})
 
@@ -331,11 +375,11 @@ def update_user():
     try:
         new_details = request.form["new_details"]
     except KeyError as e:
-        return make_error_response("missing_data", e.args)
+        raise DataRequired(e.args[0])
 
     user_data = authenticate()
     if not user_data:
-        return make_error_response("login_required")
+        raise LoginRequired()
 
     #   User is authed, do some stuff
     new_details = json.loads(new_details)
@@ -347,4 +391,4 @@ def update_user():
     if util.update_user(user["_id"], update_query):
         return make_success_response()
     else:
-        return make_error_response("unknown_error")
+        raise UnknownError()

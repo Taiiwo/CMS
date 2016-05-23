@@ -1,3 +1,6 @@
+from . import api_logger
+logger = api_logger.getChild("errors")
+
 errors = [{
         "name": "unknown_error",
         "details": "We don't know what happened... but it was bad.",
@@ -50,8 +53,13 @@ error_names = {}
 for err in errors:
     error_names[err["name"]] = err
 
-
+has_warned = False
 def add_error(name, details, status_code=500):
+    global has_warned
+    if not has_warned:
+        api_logger.warn("`add_error(<error_data>)` is deprecated. Use `class <error>(taiicms.api.ApiError)` instead")
+        has_warned = True
+
     error_names[name] = {
         "name": name,
         "details": details,
