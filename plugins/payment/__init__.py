@@ -1,6 +1,6 @@
 from .payment import Payment
 from taiicms import app
-from taiicms.api import make_error_response, make_success_response, user
+from taiicms.api import make_error_response, make_success_response, user, util
 
 from collections import Mapping
 from xml.dom import minidom
@@ -13,7 +13,7 @@ def main(config):
     global payments_config, pm
     payments_config = config
     pm = False
-    users = util.get_collection('users' db=util.auth_db)
+    users = util.get_collection('users', db=util.config["auth_db"])
     payment_user = users.find_one({"username": "payments"}, {"_id": True})
 
 @app.route("/api/plugin/payment/add-card", methods=["POST"])
@@ -80,12 +80,10 @@ def make_payment():
         # id of the requested product
         product_id = request.form['product_id']
         payment_index = request.form['payment_index']
-        shipping = request.form['shipping']
-                if 'shipping' in request.form else False
-        prepaid = request.form['recur_prepaid']
-                if 'recur_prepaid' in request.form else False
-        recur_at_day = request.form['recur_at_day']
-                if 'recur_at_day' in request.form else False
+        shipping = request.form['shipping'] or False
+
+        prepaid = request.form['recur_prepaid'] or False
+        recur_at_day = request.form['recur_at_day'] or False
     except KeyError as e:
         return make_error_response('data_required', e.args)
     product = get_product(product_id)
