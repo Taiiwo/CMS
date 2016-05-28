@@ -17,6 +17,7 @@ class Util:
             print("Could not connect to mongodb at %s:%s.\nMake sure the mongo server is running and the TaiiCMS config file is correct." % [config["host"], config["port"]])
             raise SystemExit()
         self.db = self.mongo[self.config['default_db']]
+        self.users = self.get_collection("users", db=self.config["auth_db"])
 
     def connect(self):
         self.mongo = pymongo.MongoClient(
@@ -33,7 +34,7 @@ class Util:
 
     def auth(self, user_id, session):
         # get user deets
-        db = self.get_collection('users', db=self.config['auth_db'])
+        db = self.users
         # find user in db
         user = db.find_one({'_id': ObjectId(user_id)})
         # check if the session is legit
@@ -66,10 +67,14 @@ class Util:
             recipients.append(recipient[0])
         return True, recipients
 
-    def update_user(self, userID, update):
-        users = self.get_collection('users', db=self.config['auth_db'])
-        userID = ObjectId(userID) if type(userID) != ObjectId else userID
-        return users.update({
+    def update_user(self, user, update):
+        if type(user) is str:
+            userID = ObjectId(user)
+        elif type(user) is ObjectId:
+            userID = user
+        else:
+            userID = user['_id']
+        return self.users.update({
             "_id": userID
         },
             update
