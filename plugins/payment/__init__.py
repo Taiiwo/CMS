@@ -81,7 +81,6 @@ def make_payment():
         product_id = request.form['product_id']
         payment_index = request.form['payment_index']
         shipping = request.form['shipping'] or False
-
         prepaid = request.form['recur_prepaid'] or False
         recur_at_day = request.form['recur_at_day'] or False
     except KeyError as e:
