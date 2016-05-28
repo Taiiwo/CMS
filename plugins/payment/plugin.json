@@ -7,8 +7,17 @@
   "pages": {
     "/add-card": {
       "file_path": "add-card.html"
+    },
+    "/make-payment/:id":{
+      "file_path": "make-payment.html"
+    },
+    "/manage-products":{
+      "file_path": "manage-products.html"
     }
   },
+  "datachests": [
+    "Payments"
+  ]
   "module_requirements": {
     "xmltodict": "xmltodict"
   }
