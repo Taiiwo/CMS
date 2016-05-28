@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from crontab import CronTab
 import os
+import sys
 import inspect
 import time
 
@@ -8,7 +9,7 @@ from . import config, root_logger
 
 logger = root_logger.getChild("scheduling")
 
-cmd = os.path.abspath(inspect.getfile(inspect.currentframe()))
+cmd = os.path.join(os.path.split(os.path.abspath(sys.argv[0]))[0], "schedule.py")
 crontab = CronTab(user=True)
 
 callbacks = []
