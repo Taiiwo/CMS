@@ -18,6 +18,8 @@ from .config import config, save_config, merge_dicts
 from . import (
     api,
     plugins,
+    schedule,
     site,
-    socket_handlers
+    socket_handlers,
+    util,
 )

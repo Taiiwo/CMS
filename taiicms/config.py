@@ -30,6 +30,11 @@ default_config = {
         },
     },
 
+    "scheduling": {
+        "type": "cron",
+        "frequency": "daily"
+    },
+
     "mongo": {
         "host": "localhost",
         "port": 27017,
