@@ -38,6 +38,7 @@ def refresh_plugins():
     # read each plugins `plugin.json` and
     # add the default config to the config file
     for p in plugin_names:
+        logger.info("Loading plugin '%s'" % p)
         if os.path.exists(os.path.join("plugins", p, "default_config.json")):
             default_config = json.load(open(os.path.join("plugins", p, "default_config.json")))
         else:
