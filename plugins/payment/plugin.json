@@ -17,7 +17,7 @@
   },
   "datachests": [
     "Payments"
-  ]
+  ],
   "module_requirements": {
     "xmltodict": "xmltodict"
   }
