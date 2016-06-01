@@ -10,21 +10,43 @@
         width: 100%;
       }
 
+      #json-editor-gui-settings > tr {
+        height: 91px;
+      }
+
+      #json-editor-save {
+        position: relative;
+        float: right;
+        top: 37px;
+        right: 25px;
+      }
+
+      .breadcrumb {
+        font-weight: bold;
+      }
+
       .json-editor-gui-index {
         overflow: hidden;
         width: 100px;
       }
+
+      .pointer {
+        cursor: pointer;
+      }
     </style>
     <div id="admin-div">
       <div id="json-editor-gui">
-        <nav>
+        <a class="btn-floating btn-large green accent-4" id="json-editor-save">
+          <i class="large material-icons">send</i>
+        </a>
+        <nav class="blue accent-2">
           <div class="nav-wrapper">
             <div id="json-editor-gui-nav" class="col s12">
-              <a class="breadcrumb">{{form-title}}</a>
+              <a class="breadcrumb"></a>
             </div>
           </div>
         </nav>
-        <table id="json-editor-gui-table">
+        <table id="json-editor-gui-table" class="striped">
           <thead>
             <tr>
               <th>Index</th>
@@ -35,18 +57,6 @@
 
           </tbody>
         </table>
-        <div class="fixed-action-btn" style="bottom: 45px; right: 24px;">
-          <a class="btn-floating btn-large red">
-            <i class="large material-icons">menu</i>
-          </a>
-          <ul>
-            <li>
-              <a id="json-editor-gui-save-button" class="btn-floating green tooltipped" data-position="left" data-tooltip="Save & Upload">
-                <i class="material-icons" id="submit">save</i>
-              </a>
-            </li>
-          </ul>
-        </div>
       </div>
     </div>
     <div class="hiddendiv" id="json">
@@ -78,201 +88,20 @@ var global_config;
     };
   })($.fn.attr);
 
-  function get_node(obj, node_id) {
-    if (node_id === "") {
-      return obj;
-    }
-
-    var node_names = node_id.split(",");
-    var node = obj;
-    node_names.forEach(function(name) {
-      node = node[name];
-    });
-    return node;
-  }
-
-  function save_node(obj, node_id, data) {
-    split_path = node_id.split(",");
-    path = split_path.slice(0, split_path.length - 1).join(",");
-    path = path?path:"";
-    file = split_path[split_path.length - 1];
-
-    node = get_node(obj, node_id.split(",").slice(0, -2).join(","));
-
-    switch (typeof node[file]) {
-      case "number":
-        data = parseFloat(data);
-        break;
-      case "boolean":
-        if (data === "checked" || data === "unchecked"){
-          data = (data === "checked")? true : false;
-          break;
-        }
-        else {
-          data = data? true : false;
-          break;
-        }
-    }
-    node[file] = data;
-  }
-
-  function on_nav_clicked(event) {
-    load_node(global_config, $(this).attr("data-nodepath"))
-    return false;
-  }
-
-  function on_item_clicked(event) {
-    load_node(global_config, $(this).attr("data-nodepath"));
-    return false;
-  }
-
-  function reset_nav() {
-    var nav = $("#json-editor-gui-nav").empty();
-    return nav.append($("<a>").addClass("breadcrumb")
-                              .attr("data-nodepath", "")
-                              .attr("href", "#!")
-                              .click(on_nav_clicked)
-                              .text("{{form-title}}")
-    );
-  }
-
-  function keyup_value_editor(event) {
-    if (event.keyCode == 13 || event.keyCode == 27) { // enter or esc
-      $(this).blur();
-    }
-  }
-
-  function checkbox_change(event) {
-    value = get_node(global_config, $(this).attr("data-nodepath"));
-    save_node(global_config, $(this).attr("data-nodepath"), !value);
-    return true;
-  }
-
-  function show_value_editor(event) {
-    var input = $("<input>", {
-                  "val": $(this).text(),
-                  "type": "text"
-                }).addClass("json-editor-gui-input")
-                  .attr($(this).attr())
-                  .blur(blur_value_editor)
-                  .keyup(keyup_value_editor)
-    $(this).replaceWith(input);
-    input.focus();
-    input.select();
-  }
-
-  function blur_value_editor(event) {
-    var datatype = $(this).attr("data-type")
-    var data = $(this).val()
-    if (datatype === "number"){
-      if ($.isNumeric(data)){
-        data = parseFloat(data)
-      } else {
-        site.toast("Data is not valid, must be a " + datatype)
-        $(this).focus();
-        $(this).select();
-        return;
-      }
-    }
-
-    save_node(global_config, $(this).attr("data-nodepath"), data)
-    var span = $("<span>", {
-                  "text": $(this).val()
-               }).addClass("json-editor-gui-value")
-                 .attr($(this).attr())
-                 .click(show_value_editor)
-    $(this).replaceWith(span)
-  }
-
-  function load_node(obj, node_id) {
-    path = node_id.split(",");
-    node = get_node(obj, node_id);
-    var nav = reset_nav();
-    var settings = $("#json-editor-gui-settings").empty()
-
-    if (node_id !== ""){
-      path.forEach(function(name, index, arr) {
-        nav.append(
-          $("<a>").addClass("breadcrumb")
-                   .attr("data-nodepath", arr.slice(0, index+1).join(","))
-                   .attr("href", "#!")
-
-                   .click(on_nav_clicked)
-                   .text(name)
-        );
-      });
-    }
-
-    $.each(node, function(index, value) {
-      var nodepath = (node_id === "")? index: [node_id, index].join(",")
-      if (typeof value == "object"){
-        settings.append(
-          $("<tr>").append(
-            $("<td>").attr("colspan", 2)
-                     .addClass("json-editor-gui-index")
-                     .append(
-               $("<a>").attr("data-nodepath", nodepath)
-                       .attr("href","#!")
-                       .click(on_item_clicked)
-                       .text(index)
-            )
-          )
-        )
-      } else if (typeof value === "boolean"){
-        settings.append(
-          $("<tr>").append(
-            $("<td>").attr("data-nodepath", nodepath)
-                     .addClass("json-editor-gui-index")
-                     .text(index),
-            $("<td>").append(
-              $("<input>", {
-                "type": "checkbox",
-                "id": ["checkbox", nodepath].join(",")
-              }).addClass("json-editor-gui-value")
-                .attr("data-nodepath", nodepath)
-                .attr("checked", value)
-                .change(checkbox_change),
-              $("<label>").attr("for", ["checkbox", nodepath].join(","))
-            )
-          )
-        )
-      } else {
-        settings.append(
-          $("<tr>").append(
-            $("<td>").attr("data-nodepath", nodepath)
-                     .addClass("json-editor-gui-index")
-                     .text(index),
-            $("<td>").append(
-              $("<span>").attr("data-nodepath", nodepath)
-                         .attr("data-type", typeof value)
-                         .addClass("json-editor-gui-value")
-                         .text(value)
-                         .click(show_value_editor)
-            )
-          )
-        )
-      }
-    })
-  }
-
-  function load_config(config_obj) {
-    global_config = config_obj;
-    load_node(config_obj, "")
-  }
 
   Polymer({
       is: "json-to-form",
       load_json: function(json) {
-        load_config(json);
+        load_json(json);
       },
       serialize: function() {
         return global_config;
       },
-      attached: function() {
-        load_config(JSON.parse($('#json').html()));
-
-        $("#json-editor-gui-save-button").click(function() {
-          var button = $(this);
+      onsubmit: function(a) {console.log(a)},
+      loading: function(toggle) {
+        // replace button icon with loading animation
+        var button = $(this);
+        if (toggle) {
           button.children("i").replaceWith(
             $("<div>").addClass("spinner-layer", "spinner-green").append(
               $("<div>").addClass("circle-clipper", "left").append(
@@ -286,21 +115,262 @@ var global_config;
               )
             )
           );
+          return true;
+        }
+        button.children("div.spinner-layer").replaceWith(
+          $("<i>").addClass("material-icons").text("save")
+        );
+        return false;
+      },
+      attached: function() {
+        self = this;
+        function titleify(key){
+          // replace separators with spaces
+          var title = key.replace(/[\-_]/g, ' ');
+          // for each space separated word as word
+          title = title.replace( /\w\S*/g, function(word){
+            // word = word[0].upper() + word[1:]
+            return word.charAt(0).toUpperCase() + word.substr(1).toLowerCase();
+          });
+          return title;
+        }
+        // loads a node (sub object) into the editor
+        function load_node(obj, node_path) {
+          path = node_path.split(",");
+          // get the current object to edit
+          node = get_node(obj, node_path);
+          var nav = generate_nav();
+          var settings = $("#json-editor-gui-settings").empty();
+          // init the breadcrumbs
+          if (node_path !== ""){
+            path.forEach(function(name, index, arr) {
+              nav.append(
+                $("<a>")
+                  .addClass("breadcrumb json-to-form pointer")
+                  .attr("data-nodepath", arr.slice(0, index+1).join(","))
+                  .click(on_nav_clicked)
+                  .text(titleify(name))
+              );
+            });
+          }
+          // Helper function that formats a table row
+          function table_row(key, value, node_path) {
+            return $("<tr>")
+              .addClass('json-to-form')
+              .append(
+                  $("<td>")
+                    .attr("colspan", 1)
+                    .append(key
+                      .addClass("json-editor-gui-index")
+                      .attr("data-nodepath", node_path)
+                    )
+                ,
+                  $("<td>").append(value
+                    .addClass("json-editor-gui-value json-to-form")
+                    .attr("data-nodepath", node_path)
+                  )
+              )
+            ;
+          }
+          // init the editor
+          $.each(node, function(index, value) {
+            // Path to the current node
+            var this_node_path = (node_path === "")
+                ? index : node_path + "," + index;
+            // add the right input type for the data type
+            switch (typeof value){
+              case "object":
+                // it's another object, so make a link to edit that object
+                settings.append(
+                  table_row($("<a>")
+                      .click(on_item_clicked)
+                      .text(titleify(index))
+                    ,
+                    $('<span>'),
+                    this_node_path
+                  )
+                );
+                break;
+            case "boolean":
+              settings.append(
+                table_row(
+                  $('<span>').text(titleify(index) + ':'),
+                  $('<span>').append(
+                    $("<input>")
+                      .attr("type", "checkbox")
+                      .attr("id", "checkbox-" + this_node_path)
+                      .attr("checked", value)
+                      .change(checkbox_change)
+                    ,
+                    $("<label>")
+                      .attr("for", "checkbox-" + this_node_path)
+                    )
+                  ,
+                  this_node_path
+                )
+              );
+              break;
+            default:
+              settings.append(
+                table_row(
+                  $('<span>').text(titleify(index) + ':'),
+                  $("<span>")
+                    .attr("data-type", typeof value)
+                    .text(value)
+                    .click(show_value_editor)
+                  ,
+                  this_node_path
+                )
+              );
+            }
+          });
+        }
 
-          site.toast("Uploading new configuration...")
-          site.plugin_api("admin", "config/save", {"new_config": JSON.stringify(global_config)}, function(data) {
-            button.children("div.spinner-layer").replaceWith(
-              $("<i>").addClass("material-icons")
-                      .text("save")
-            );
-            if (!data.success) {
-              site.toast("Upload failed. An unexpected error occurred.")
-              console.log(data)
+        // returns the object at given node_path in obj
+        function get_node(obj, node_path) {
+          if (node_path === "") {
+            // path is "root"
+            return obj;
+          }
+          var node_keys = node_path.split(",");
+          var node = obj;
+          node_keys.forEach(function(key) {
+            node = node[key];
+          });
+          return node;
+        }
+
+        // saves a value to a given path within an object
+        function save_node(obj, node_path, value) {
+          node_keys = node_path.split(",");
+          // gets the key of the value
+          key = node_keys[node_keys.length - 1];
+          // gets the current node
+          node = get_node(obj, node_keys.slice(0, -2).join(","));
+          switch (typeof node[key]) {
+            case "number":
+              value = parseFloat(value);
+              break;
+            case "boolean":
+              if (value === "checked" || value === "unchecked"){
+                value = (value === "checked")? true : false;
+                break;
+              }
+              else {
+                value = value? true : false;
+                break;
+              }
+          }
+          node[key] = value;
+          return node;
+        }
+
+        // returns the nav element
+        function generate_nav() {
+          var nav = $("#json-editor-gui-nav").empty();
+          return nav.append($("<a>")
+            .addClass("breadcrumb json-to-form pointer")
+            .attr("data-nodepath", "")
+            .click(on_nav_clicked)
+            .text(self.attributes['form-title'].value)
+          );
+        }
+        // Begin event handlers
+        // on breadcrumb click
+        function on_nav_clicked(event) {
+          load_node(global_config, $(this).attr("data-nodepath"))
+          return false;
+        }
+
+        // when an object is selected to edit
+        function on_item_clicked(event) {
+          load_node(global_config, $(this).attr("data-nodepath"));
+          return false;
+        }
+
+        // on return or escape inside a text box
+        function keyup_value_editor(event) {
+          if (event.keyCode == 13 || event.keyCode == 27) { // enter or esc
+            $(this).blur();
+          }
+        }
+
+        // on checkbox change
+        function checkbox_change(event) {
+          value = get_node(
+            global_config,
+            $(this).parent().attr('data-nodepath')
+          );
+          save_node(
+            global_config,
+            $(this).parent().attr('data-nodepath'),
+            !value
+          );
+          return true;
+        }
+
+        // replace event.trigger with a textbox
+        // Executes on value click
+        function show_value_editor(event) {
+          var input = $("<input>")
+            .val($(this).text())
+            .attr("type", "text")
+            .addClass("json-editor-gui-input")
+            .attr($(this).attr())
+            .blur(blur_value_editor)
+            .keyup(keyup_value_editor)
+          ;
+          $(this).replaceWith(input);
+          input.focus();
+          input.select();
+        }
+
+        // Takes a json string and loads it into the editor
+        function load_json(json) {
+          global_config = json;
+          load_node(json, "")
+        }
+
+        // Replaces an edited textbox with a span contain the value
+        // on enter press inside a text box.
+        function blur_value_editor(event) {
+          // verify that number fields are numeric
+          var datatype = $(event.target).attr("data-type");
+          var data = $(event.target).val();
+          if (datatype === "number"){
+            if ($.isNumeric(data)){
+              data = parseFloat(data);
+            }
+            else {
+              site.toast("Data is not valid, must be a number");
+              $(event.target).focus();
+              $(event.target).select();
               return;
             }
-            site.toast("Uploaded new configuration!")
-          });
+          }
+          // save changes to global_config
+          save_node(
+            global_config, event.target.attributes['data-nodepath'].value, data
+          );
+          // build the span that displays the value when not being edited
+          var span = $("<span>")
+            .text($(event.target).val())
+            .addClass("json-editor-gui-value")
+            .attr($(event.target).attr())
+            .click(show_value_editor)
+          ;
+          // replace this text box with span
+          $(event.target).replaceWith(span);
+        }
+
+        // on submit
+        $('#json-editor-save').click(function(event){
+          self.onsubmit(self.serialize(), event);
         });
+
+        // on load
+        // load raw JSON from #json
+        load_json(JSON.parse($('#json').html()));
       }
   });
 </script>
