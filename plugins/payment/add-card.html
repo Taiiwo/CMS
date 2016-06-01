@@ -1,15 +1,16 @@
-<link rel="import" href="json-to-form.html" />
+<link rel="import" href="../layout/json-to-form.html" />
 <dom-module id="add-card">
     <template>
         <style>
             /**/
         </style>
         <div class="container">
-          <json-to-form form-title="asdasd">
+          <json-to-form form-title="Card Information">
             {
-              "card_number": "5431111111111111",
-              "card _expiry": "10/25",
-              "security_code": "999"
+              "card_number": 5431111111111111,
+              "card_expiry": "10/25",
+              "security_code": 999,
+              "some_bool": true
             }
           </json-to-form>
         </div>
@@ -19,8 +20,8 @@
     Polymer({
         is: "add-card",
         attached: function() {
-          // get the url
-          site.plugin_api('payment', 'get_url', {}, function(url){
+          var form = $('json-to-form')[0];
+          site.plugin_api('payment', 'add-card', form.serialize(), function(url){
 
           });
         }
