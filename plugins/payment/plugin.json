@@ -2,17 +2,23 @@
   "author": "Taiiwo",
   "description": "Add Payments to your site!",
   "website": "https://github.com/Taiiwo/TaiiCMS",
-  "depends": [],
+  "depends": ["layout"],
   "conflicts": [],
   "pages": {
     "/add-card": {
       "file_path": "add-card.html"
     },
-    "/make-payment/:id":{
+    "/add-card/:product_id": {
+      "file_path": "add-card.html"
+    },
+    "/make-payment/:product_id":{
       "file_path": "make-payment.html"
     },
     "/manage-products":{
       "file_path": "manage-products.html"
+    },
+    "/payment-methods": {
+      "file_path": "payment-methods.html"
     }
   },
   "datachests": [

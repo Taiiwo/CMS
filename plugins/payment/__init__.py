@@ -6,11 +6,12 @@ from collections import Mapping
 from xml.dom import minidom
 from flask import request
 import requests
+import time
 import json
 import re
 
 def main(config):
-    global payments_config, pm
+    global payments_config, pm, users
     payments_config = config
     pm = False
     users = util.get_collection('users', db=util.config["auth_db"])
@@ -22,23 +23,37 @@ def add_card():
     if not usern:
         return make_error_response("login_required")
     try:
-        cc = request.form['cc']
-        exp = request.form['exp']
-        cvv = request.form['cvv'] if 'cvv' in request.form else False
+        cc = request.form['card_number']
+        exp = request.form['card_expiry']
+        cvv = request.form['security_code']\
+                if 'security_code' in request.form else False
     except KeyError as e:
         return make_error_response('data_required', e.args)
     global pm
     if not pm:
         pm = Payment(payments_config)
-    vault = pm.create_vault(cc, exp, cvv=cvv)
-    if vault['result'] == "1":
+    vault_unrefined = pm.create_vault(cc, exp, cvv=cvv)
+    vault = {
+        "cc-number": vault_unrefined['billing']['cc-number'],
+        "billing-id": vault_unrefined['billing']['billing-id'],
+        "customer-id": vault_unrefined['customer-id'],
+        "customer-vault-id": vault_unrefined['customer-vault-id'],
+        "added": time.time()
+    }
+    if vault_unrefined['result'] == "1":
         # store the vault info somewhere in the user data
-        usern.update({
+        print( users.update(usern, {
             "$push": {
                 "nmi_vaults": vault
             }
-        })
-        return make_success_response()
+        }))
+        if 'nmi_vaults' in usern:
+            usern['nmi_vaults'].append(vault)
+            vaults = usern['nmi_vaults']
+        else:
+            vaults = [vault,]
+        print(vaults)
+        return make_success_response({"vaults": vaults})
     else:
         return make_error_response('data_invalid')
 
@@ -55,7 +70,7 @@ def get_payment_methods():
     index = 0
     for vault in usern['nmi_vaults']:
         vault['method_index'] = index
-        del vault['vault_id']
+        del vault['customer-vault-id']
         vaults.append(vault)
         index += 1
     return make_success_response({

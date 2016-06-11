@@ -1,16 +1,15 @@
 <link rel="import" href="../layout/json-to-form.html" />
-<dom-module id="add-card">
+<dom-module id="add-card" attributes="product_id">
     <template>
         <style>
             /**/
         </style>
         <div class="container">
-          <json-to-form form-title="Card Information">
+          <json-to-form form-title="Add New Payment Method">
             {
               "card_number": 5431111111111111,
               "card_expiry": "10/25",
-              "security_code": 999,
-              "some_bool": true
+              "security_code": 999
             }
           </json-to-form>
         </div>
@@ -20,10 +19,27 @@
     Polymer({
         is: "add-card",
         attached: function() {
+          if (!site.userAuthed()) {
+            site.route('/login');
+            site.toast('Authentication required');
+            return false;
+          }
           var form = $('json-to-form')[0];
-          site.plugin_api('payment', 'add-card', form.serialize(), function(url){
-
-          });
+          self = this;
+          form.onsubmit = function(event){
+            site.plugin_api('payment', 'add-card', form.serialize(), function(data){
+              if (data.success){
+                site.toast("Payment method added");
+                user_data.nmi_vaults = data.vaults;
+                if (self.product_id){
+                  site.route('/make-payment/' + self.product_id.value);
+                }
+                else {
+                  site.route('/payment-methods');
+                }
+              }
+            });
+          };
         }
     });
 </script>
