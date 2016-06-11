@@ -69,7 +69,7 @@ def remove_card():
     if method_id < len(usern["nmi_vaults"]):
         usern = users.find_one_and_update(
             {"_id": usern["_id"]},
-            {"$unset": {"nmi_vaults.%s" % card_id: ""}}
+            {"$unset": {"nmi_vaults.%s" % method_id: ""}}
         )
         return make_success_response({"vaults": usern["nmi_vaults"]})
     else:
