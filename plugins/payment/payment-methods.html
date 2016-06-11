@@ -27,13 +27,22 @@ payment methods.
         is: "payment-methods",
         attached: function() {
           function on_remove_method() {
+            let method_id = $(this).attr("data-method-id");
             site.plugin_api(
               "payment",
               "remove-method",
-              {"method_id": $(this).attr("data-method-id")},
+              {"method_id": method_id},
               function(data) {
                 if (data.success) {
                   site.toast("Payment method successfully removed.");
+                  // get find the input with the correct method-id, then go up 3 levels
+                  // then get fade the element out, then remove it.
+                  $("taii-list")
+                    .find("input[type='radio'][data-method-id='" + method_id + "']")
+                    .parents().eq(2)
+                    .fadeOut(1000, function() { // looks bad... needs a slideup or something
+                        $(this).remove()
+                    });
                 } else {
                   site.toast("An error occurred.");
                   console.error("Error: ", data);
@@ -69,6 +78,7 @@ payment methods.
             return Date(ts).slice(16, 24);
           }
           function display_methods(methods, default_method){
+            $(list).children("ul").empty();
             for (var i in methods){
               var method = methods[i];
               list.add_item(
