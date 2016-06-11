@@ -67,10 +67,19 @@ def remove_card():
         return make_error_response("data_invalid", "method_id")
 
     if method_id < len(usern["nmi_vaults"]):
-        usern = users.find_one_and_update(
-            {"_id": usern["_id"]},
-            {"$unset": {"nmi_vaults.%s" % method_id: ""}}
-        )
+        if usern["default_method"] == method_id:
+            usern = users.find_one_and_update(
+                {"_id": usern["_id"]},
+                {
+                    "$unset": {"nmi_vaults.%s" % method_id: ""},
+                    "$set": {"default_method": False}
+                }
+            )
+        else:
+            usern = users.find_one_and_update(
+                {"_id": usern["_id"]},
+                {"$unset": {"nmi_vaults.%s" % method_id: ""}}
+            )
         return make_success_response({"vaults": usern["nmi_vaults"]})
     else:
         return make_error_response("data_invalid", "method_id")
