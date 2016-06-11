@@ -53,7 +53,7 @@ payment methods.
             return false;
           }
           var list = $('taii-list')[0];
-          site.plugin_api('payment', 'get-payment-methods', function(methods){
+          site.plugin_api('payment', 'get-payment-methods', {}, function(methods){
             for (var i in methods.payment_methods){
               var method = methods.payment_methods[i];
               list.add_item(
