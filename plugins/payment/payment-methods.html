@@ -36,7 +36,8 @@ payment methods.
                 if (data.success)
                   site.toast("Payment method successfully removed.");
                 else
-                  site.toast("Error.");
+                  site.toast("An error occurred.");
+                  console.log("Error: ", data);
               }
             );
           }
