@@ -13,7 +13,6 @@ Below is a list of all your payment methods. Here you can add or remove your
 payment methods.
         </taii-markdown>
         <div class="container">
-
           <taii-list></taii-list>
         </div>
         <div class="fixed-action-btn" style="bottom: 45px; right: 24px;">
@@ -32,12 +31,13 @@ payment methods.
               "payment",
               "remove-card",
               {"card_id": $(this).attr("data-method-id")},
-              function(data){
-                if (data.success)
+              function(data) {
+                if (data.success) {}
                   site.toast("Payment method successfully removed.");
-                else
+                } else {
                   site.toast("An error occurred.");
-                  console.log("Error: ", data);
+                  console.error("Error: ", data);
+                }
               }
             );
             return false;
@@ -51,12 +51,13 @@ payment methods.
               "payment",
               "set-default-method",
               {"method_id": $(this).attr("data-method-id")},
-              function(data){
-                if (data.success)
+              function(data) {
+                if (data.success){
                   site.toast("Default payment method updated.");
-                else
+                } else {
                   site.toast("An error occurred.");
                   console.error(data);
+                }
               }
             );
             return false;
@@ -82,6 +83,7 @@ payment methods.
                     $('<input>')
                       .attr('id', 'default-' + i)
                       .attr('type', 'radio')
+                      .attr("name", "default-method")
                       .attr("data-method-id", method.index)
                       .attr("checked", method.index === default_method ? "checked" : false)
                       .change(on_change_default_method),
