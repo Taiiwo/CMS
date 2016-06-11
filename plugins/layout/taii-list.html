@@ -5,17 +5,48 @@
                 display: none;
             }
         </style>
-        <content id="list-contents" />
-        
+        <ul class="collection" id="taii-list"></ul>
+        <div class="hidden" id="list-contents">
+          <content/>
+        </div>
     </template>
 </dom-module>
 <script>
     Polymer({
         is: "taii-list",
+        add_item: function(title, body, avatar, icon){
+          $('#taii-list').append(
+            $('<li>')
+              .addClass('collection-item avatar')
+              .append(
+                $('<i>')
+                  .addClass('material-icons circle')
+                  .text(avatar)
+              ,
+                $('<span>')
+                  .addClass('title')
+                  .text(title)
+              ,
+                $('<p>')
+                  .html(body)
+              ,
+                icon
+                  .addClass('secondary-content')
+              )
+          )
+        },
         attached: function(){
+          self = this;
+          if ($('#list-contents').children().length > 0){
             $('#list-contents').each(function() {
-
+              self.add_item(
+                $(this.children[0]).text(),
+                $(this.children[1]).text(),
+                $(this.children[2]).text(),
+                $(this.children[3])
+              );
             });
+          }
         }
     })
 </script>
