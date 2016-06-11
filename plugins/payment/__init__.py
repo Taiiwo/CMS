@@ -51,22 +51,22 @@ def add_card():
     else:
         return make_error_response('data_invalid')
 
-@app.route("/api/plugin/payment/remove-card", methods=["POST"])
+@app.route("/api/plugin/payment/remove-method", methods=["POST"])
 def remove_card():
     usern = user.authenticate()
     if not usern:
         return make_error_response("login_required")
 
     try:
-        card_id = request.form["card_id"]
+        method_id = request.form["method_id"]
     except KeyError as e:
         return make_error_response('data_required', e.args[0])
     try:
-        card_id = int(card_id)
+        method_id = int(method_id)
     except ValueError:
-        return make_error_response("data_invalid", "card_id")
+        return make_error_response("data_invalid", "method_id")
 
-    if card_id < len(usern["nmi_vaults"]):
+    if method_id < len(usern["nmi_vaults"]):
         usern = users.find_one_and_update(
             {"_id": usern["_id"]},
             {"$unset": {"nmi_vaults.%s" % card_id: ""}}
