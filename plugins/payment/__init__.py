@@ -73,7 +73,7 @@ def remove_card():
         )
         return make_success_response({"vaults": usern["nmi_vaults"]})
     else:
-        return make_error_response("data_invalid", "card_id")
+        return make_error_response("data_invalid", "method_id")
 
 
 @app.route("/api/plugin/payment/set-default-method", methods=['POST'])
