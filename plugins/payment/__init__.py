@@ -62,7 +62,6 @@ def get_payment_methods():
         default_card = False
     vaults = []
     index = 0
-    pprint(usern)
     for vault in usern['nmi_vaults']:
         vault['method_index'] = index
         del vault['customer-vault-id']
