@@ -51,6 +51,33 @@ def add_card():
     else:
         return make_error_response('data_invalid')
 
+@app.route("/api/plugin/payment/remove-card", methods=["POST"])
+def remove_card():
+    usern = user.authenticate()
+    if not usern:
+        return make_error_response("login_required")
+
+    try:
+        card_id = request.form["card_id"]
+    except KeyError as e:
+        return make_error_response('data_required', e.args[0])
+    try:
+        card_id = int(card_id)
+    except ValueError:
+        return make_error_response("data_invalid", "card_id")
+
+    if card_id < len(usern["nmi_vaults"]):
+        usern = users.find_one_and_update(
+            {"_id": usern["_id"]},
+            {"$unset": {"nmi_vaults.%s" % card_id: ""}}
+        )
+        return make_success_response({"vaults": usern["nmi_vaults"]})
+    else:
+        return make_error_response("data_invalid", "card_id")
+
+
+
+
 @app.route("/api/plugin/payment/get-payment-methods", methods=['POST'])
 def get_payment_methods():
     usern = user.authenticate()
@@ -63,6 +90,10 @@ def get_payment_methods():
     vaults = []
     index = 0
     for vault in usern['nmi_vaults']:
+        # ignore removed vaults
+        if vault is None:
+            continue
+
         vault['method_index'] = index
         del vault['customer-vault-id']
         vaults.append(vault)

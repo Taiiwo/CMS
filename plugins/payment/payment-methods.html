@@ -27,6 +27,20 @@ payment methods.
     Polymer({
         is: "payment-methods",
         attached: function() {
+          function on_remove_method() {
+            site.plugin_api(
+              "payment",
+              "remove-card",
+              {"card_id": $(this).attr("data-method-id")},
+              function(data){
+                if (data.success)
+                  site.toast("Payment method successfully removed.");
+                else
+                  site.toast("Error.");
+                  console.log(data)
+              }
+            )
+          }
           function to_date(ts){
             return Date(ts).slice(0, 15);
           }
@@ -61,10 +75,13 @@ payment methods.
                   $('<i>')
                     .addClass('material-icons')
                     .text("delete")
+                    .click(on_remove_method)
+                    .attr("data-method-id", i)
                   ,
                   $('<i>')
                     .addClass('material-icons')
                     .text("send")
+                    .attr("data-method-id", i)
                 )
               )
             }
