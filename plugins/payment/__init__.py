@@ -42,18 +42,12 @@ def add_card():
     }
     if vault_unrefined['result'] == "1":
         # store the vault info somewhere in the user data
-        print( users.update(usern, {
+        usern = users.find_and_modify({"_id": usern["_id"]}, {
             "$push": {
                 "nmi_vaults": vault
             }
-        }))
-        if 'nmi_vaults' in usern:
-            usern['nmi_vaults'].append(vault)
-            vaults = usern['nmi_vaults']
-        else:
-            vaults = [vault,]
-        print(vaults)
-        return make_success_response({"vaults": vaults})
+        })
+        return make_success_response({"vaults": usern["nmi_vaults"]})
     else:
         return make_error_response('data_invalid')
 
@@ -68,6 +62,7 @@ def get_payment_methods():
         default_card = False
     vaults = []
     index = 0
+    pprint(usern)
     for vault in usern['nmi_vaults']:
         vault['method_index'] = index
         del vault['customer-vault-id']
