@@ -38,6 +38,20 @@
                     )
                 ;
             }
+            else if ($(this).attr('type') == 'check'){
+                container.append(
+                    $('<form/>').append(
+                        $('<input/>')
+                            .attr('id', $(this).attr('iid'))
+                            .attr('type', 'checkbox')
+                    ,
+                        $('<label/>')
+                            .attr('for', $(this).attr('iid'))
+                            .text($(this).attr('label'))
+                    )
+                  )
+                ;
+            }
             else if ($(this).attr('type') == 'button'){
                 container
                     .append(
