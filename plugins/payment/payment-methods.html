@@ -40,6 +40,26 @@ payment methods.
                   console.log("Error: ", data);
               }
             );
+            return false;
+          }
+          function on_send_method() {
+            //TODO: something
+            return false;
+          }
+          function on_change_default_method() {
+            site.plugin_api(
+              "payment",
+              "set-default-method",
+              {"method_id": $(this).attr("data-method-id")},
+              function(data){
+                if (data.success)
+                  site.toast("Default payment method updated.");
+                else
+                  site.toast("An error occurred.");
+                  console.error(data);
+              }
+            );
+            return false;
           }
           function to_date(ts){
             return Date(ts).slice(0, 15);
@@ -47,15 +67,9 @@ payment methods.
           function to_time(ts){
             return Date(ts).slice(16, 24);
           }
-          if (!site.userAuthed()) {
-            site.route('/login');
-            site.toast('Authentication required');
-            return false;
-          }
-          var list = $('taii-list')[0];
-          site.plugin_api('payment', 'get-payment-methods', {}, function(methods){
-            for (var i in methods.payment_methods){
-              var method = methods.payment_methods[i];
+          function display_methods(methods, default_method){
+            for (var i in methods){
+              var method = methods[i];
               list.add_item(
                 method['cc-number'],
                 $('<span>')
@@ -64,27 +78,48 @@ payment methods.
                     " at " + to_time(method.added)
                   )
                   .append(
-                    $('<taii-input>')
-                      .attr('iid', 'default-' + i)
-                      .attr('type', 'check')
-                      .attr('label', 'default')
+                    $("<br />"),
+                    $('<input>')
+                      .attr('id', 'default-' + i)
+                      .attr('type', 'radio')
+                      .attr("data-method-id", method.index)
+                      .attr("checked", method.index === default_method ? "checked" : false)
+                      .change(on_change_default_method),
+                    $('<label>')
+                      .attr('for', 'default-' + i)
+                      .text('default')
                   )
                 ,
                 "credit_card",
                 $('<span>').append(
-                  $('<i>')
-                    .addClass('material-icons')
-                    .text("delete")
+                  $('<a>')
+                    .attr("data-method-id", method.index)
+                    .attr("href", "#")
                     .click(on_remove_method)
-                    .attr("data-method-id", i)
+                    .append(
+                      $('<i>').addClass('material-icons')
+                              .text("delete")
+                    )
                   ,
-                  $('<i>')
-                    .addClass('material-icons')
-                    .text("send")
-                    .attr("data-method-id", i)
+                  $('<a>')
+                    .attr("data-method-id", method.index)
+                    .attr("href", "#")
+                    .append(
+                      $("<i>").addClass('material-icons')
+                              .text("send")
+                    )
                 )
               )
             }
+          }
+          if (!site.userAuthed()) {
+            site.route('/login');
+            site.toast('Authentication required');
+            return false;
+          }
+          var list = $('taii-list')[0];
+          site.plugin_api('payment', 'get-payment-methods', {}, function(data){
+            display_methods(data.payment_methods, data.default_method);
           });
         }
     });

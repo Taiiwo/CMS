@@ -76,6 +76,29 @@ def remove_card():
         return make_error_response("data_invalid", "card_id")
 
 
+@app.route("/api/plugin/payment/set-default-method", methods=['POST'])
+def set_default_method():
+    usern = user.authenticate()
+    if not usern:
+        return make_error_response("login_required")
+
+    try:
+        method_id = request.form["method_id"]
+    except KeyError as e:
+        return make_error_response('data_required', e.args[0])
+    try:
+        method_id = int(method_id)
+    except ValueError:
+        return make_error_response("data_invalid", "method_id")
+
+    res = users.update_one(
+        {"_id": usern["_id"]},
+        {"$set": {"default_method": method_id}}
+    )
+    if res:
+        return make_success_response()
+    else:
+        return make_error_response("unknown_error")
 
 
 @app.route("/api/plugin/payment/get-payment-methods", methods=['POST'])
@@ -88,16 +111,15 @@ def get_payment_methods():
     else:
         default_card = False
     vaults = []
-    index = 0
-    for vault in usern['nmi_vaults']:
+    for i in range(len(usern['nmi_vaults'])):
+        vault = usern["nmi_vaults"][i]
         # ignore removed vaults
         if vault is None:
             continue
 
-        vault['method_index'] = index
+        vault['index'] = i
         del vault['customer-vault-id']
         vaults.append(vault)
-        index += 1
     return make_success_response({
         "default_method": default_card,
         "payment_methods": vaults
