@@ -1,132 +1,231 @@
 TaiiCMS - The Non-Standard Content Management System
 ====================================================
 
-TaiiCMS is a content management system written using `WSGI` and
-`mongodb` in Python. It provides a simple way to manage and develop a
+TaiiCMS is a content management system written using `flask` and
+`mongodb` in Python and JavaScript. It provides a simple way to develop and manage a
 webpage. TaiiCMS attempts to provide the basic features required by most
 projects in a non-intrusive, all front end way.
 
-TaiiCMS relies on 3 main procedures. The Authentication API, the
-Component API (previously known as real time mongo), and the Pagination
-system.
+TaiiCMS is split into the core, and the plugins. The plugins add features and
+functionality to you webpage, whereas the core provide the procedures for
+loading the plugins efficiently.
 
-The Authentication API
-----------------------
+Plugins
+-------
+If you're interested in adding features to TaiiCMS, you're most likely going to
+be developing them in the form of plugins. Each plugin has it's own folder in
+the `/plugins` folder, and within it are the various files that provide the
+functionality to your plugin. Below is a breakdown of each file, and what it is
+used for. Note: The only required file is the `plugin.json` file.
 
-The Authentication API provides an AJAX/JSON interface to
-authentication. Use the Authentication API to register users, log them
-in, and look up other users.
+## File list
+### plugins.json
+This file represents your plugins settings, and is how you tell the core how to
+use your plugin in a site. The file is a JSON formatted text file. Below is each
+key, and the purpose of it's value.
 
-Pagination
-----------
+#### "author", "description", "website"
+These are all meta tags that display who made the plugin, what it does, and
+where it came from.
 
-Traditional CMSs save pages inside a database, allowing it to be
-retrieved using templating systems. TaiiCMS stores none of your pages in
-databases and instead stores it in traditional HTML files. The
-distiction between the method used by TaiiCMS and the traditional method
-of storing content inside individual files is that TaiiCMS stores it's
-content within webcomponent-compatible elements using the Polymer
-framework, then lazy-loads them using app-router.
+#### "depends"
+This key's value is an array of the string names of each plugin that is required
+for the plugin to function properly.
 
-Component API
--------------
+#### "conflicts"
+This key's value is an array of the string names of each plugin that is known to
+break this plugin. As such, the plugin will not be installed if any of it's
+conflicts are installed prior.
 
-Features in TaiiCMS are added with Polymer Webcomponents in modular
-fasion. The component API is another javascript API inline with the
-Authenticaion API that can be used inside these Polymer Elements giving
-them access to central database in real time, all from the front end!
+#### "pages"
+Pages is the most important key. It is what the core uses to generate your site
+routes. The value is an object of objects. The key is the page route. The value
+must contain either "element" or "file_path". "element" defines the name of the
+element that will be loaded at the route. "file_path" defines the file path of
+an element to load, and place at the route.
 
-The security conscious amung you will be wondering if a database that is
-interfaced with entirely on the front end is secure. The Component API
-gives database records (documents) only to those who are authenticated
-to see them. Each document has a sender and a recipient field, and you
-may only see the document if you are able to authenticate as one of
-them.
+### default_config.json
+This file contains a JSON object of settings that will be appended to the main
+config.json in `/`. You can use this for the definition of API keys and other
+such sensitive information.
 
-In order to make this layout more flexible, DataChests were created. A
-DataChest is a special type of user that cannot be logged into. The
-one-time authentication information is given out to a group of users
-that are permitted to access the DataChest. A DataChest can be the
-sender or recipient of a document, and an optional author field will be
-verified if submitted (Not implemented yet). All users are added to the
-'Public' DataChest by default, allowing for public and/or anonymous
-broadcasts.
+### components.html
+This file can be used to import scripts elements and CSS globally. Use it
+sparingly. Note: You can import scripts elements and CSS at the top of your
+Polymer elements.
 
-How to Use TaiiCMS
-------------------
+### \__init__.py
+This file should be avoided as much as possible. It should only be used if there
+is no way to complete the task using JavaScript and the existing APIs provided.
+Note: It is entirely possible to request and store data using the existing APIs.
+The only reason to use this file is if you're dealing with some other method of
+authentication, such as some kind of external exchange (money, bitcoin, etc).
 
-### Configuration
+## Polymer Elements - HTML format explained
+TaiiCMS uses a webcomponent library called Polymer. Polymer allows you to create
+your own HTML elements that will be expanded when they are 'attached' to the
+page. TaiiCMS uses these elements to load in pages dynamically.
 
-Configuration options for mongodb can be found in `config.json`. Other
-than that, the configuration of modules are added along with their
-inclusion on the desired page.
-
-### Creating or Editing a Page
-
-In order to edit or create a page, one must do so within the `/pages`
-directory. Here you must construct a valid polymer element that will be
-displayed in the main content section of the page.
-
-You must then add an element within the `<app-router>` section of
-`index.html` that represents your page. Then you will be able to use
-`site.route('/desination');` to navigate to your new page, or simply
-navigate to `#/desitnation` in the URI.
-
-More complex routes are possible. It is possible to pass attributes to
-the page's Polymer element via the route path, allowing you to have
-effective dynamic URLs. More info on this can be found in the app-router
-documentation: [Data Binding](https://erikringsmuth.github.io/app-router/#/databinding/1337?queryParam1=Routing%20with%20Web%20Components!)
-
-Tutorials
----------
-
-### Creating a new page
-
-Add the following page skeleton to a new file inside the `/pages`
-directory; or you can simply duplicate the template page:
-`/pages/template-page.html`.
+### Example:
 
 ```html
-<dom-module id="template-page">
+<!-- import an element from the layout plugin -->
+<link rel="import" href="../layout/json-to-form.html" />
+<!-- It is mandatory to change this id to the name that is defined in
+plugin.json! Don't forget! Don't forget the other one, too! (below) -->
+<dom-module id="element-name">
     <template>
         <style>
             /*
-            CSS goes here
+              We can put our own custom CSS here. It is better to use this than
+              an external file.
             */
         </style>
         <div class="container">
-            <!--
-            Page content goes here
-            -->
+          <!-- This element takes a JSON object and turns it into a form -->
+          <json-to-form form-title="Enter Some Information!">
+            {
+              "first_name": "Please enter your first name",
+              "last_name": "Please enter your last name",
+              "email_updates": true
+            }
+          </json-to-form>
         </div>
     </template>
 </dom-module>
 <script>
+    // here we define our polymer object
     Polymer({
-        is: "template-page",
+        // It is mandatory to change this to the name that is defined in
+        // plugin.json! Don't forget! Don't forget the other one, too! (above)
+        is: "element-name",
+        // this is how you define public methods for our element so people can
+        // call them just like we call `form.serialize()`
+        our_public_method: function(string){
+          console.log(string);
+        },
+        // This is our main JavaScript block. All the JavaScript here will
+        // execute only when all the HTML above has been loaded to the page.
+        // `this` refers to our polymer element, so we can call our own methods
+        // with `this.our_public_method("test")`
         attached: function() {
-            // JavaScript goes here
+          // make sure the user is logged in
+          if (!site.userAuthed()) {
+            // if the user isn't logged in, send them to the login page
+            site.route('/login');
+            // send the user a message to show why they were redirected
+            site.toast('Authentication required');
+            // stop execution of the current element
+            return false;
+          }
+          // select the form and store it
+          var form = $('json-to-form')[0];
+          // set the onsubmit callback
+          form.onsubmit = function(event){
+            // place the information in a database
+            rtm.send({
+                // choose the collection to store the information
+                collection: 'random_information',
+                // specify that we're sending usernames, not user IDs
+                senderID_type: 'username',
+                recipientID_type: 'username',
+                // send our keys to authenticate as a public user
+                sender_pair: user_data.datachests['Public'],
+                // send it so that only editors can read it
+                recipient: "Editors",
+                // serialize the form data into a json object
+                data: form.serialize()
+            });
+          };
         }
     });
 </script>
 ```
 
-To make your page accessible via URL, add the following to the
-`<app-router>` section of `index.html`:
+The above code will generate a page that looks something like this:
+![Screenshot](http://i.imgur.com/KmRw3Tm.png)
 
-```html
-<app-route path="/desired/path" import="pages/my-page.html"></app-route>
-```
+Provided APIs
+-------------
+TaiiCMS provides several HTTP APIs that can be used from your elements via AJAX,
+or through our complete set of API wrappers.
 
-Where "/desired/path" is your desired path, and "my-page.html" is the
-name of your page. You can now visit your new page by going to
-`localhost:8080/#/desired/path`. The `#` is important.
+## site.js
+`site.js` creates the global `site` object, and can be used to access various
+utility functions, as well as to interface with the APIs. Below is a
+comprehensive list of all methods of the `site` object, and it's function.
 
-### Interfacing with TaiiCMS with Your New Page
+### site.toast(string)
+Creates a subtle popup notification that displays a short message for 4 seconds.
 
-The JavaScript library `js/site.js` creates the `site` object. `site`
-controls many of the features of TaiiCMS, and it is recommended that it
-is kept, as long as you are still using TaiiCMS's Features.
+### site.api(action:string, data:object, callback:function)
+A shorthand function for sending an AJAX function to the back end. See the
+API documentation for more information on what possible "methods" are available.
 
-The JavaScript library 'js/rtm.js' creates the 'RTM' object, and allows
-you to make connections to the Component API.
+### site.markdown(selector:string)
+Changes the content of the selected element from markdown text to formatted
+HTML. Note: You can use use the taii-markdown element from the layout plugin.
+
+### site.route(path:string)
+Redirects the user to the route at `path`.
+
+### site.userAuthed()
+Returns `true` if the user is authed, and `false` if the user has not yet
+authenitcated. Note: API requests that require authentication will simply not
+work without it. This function is just to stop the user from getting access
+denied responses.
+
+### site.notify(title:string, body:html, buttons:array[array[text:string, colour:string, callback:function], ...])
+Used to setup a modal notification. Think of it like a prettier `prompt` from
+JS. The modal uses `title` as the title, `body` as the body of the modal, and
+each button in the `buttons` array will be placed at the bottom. Where `button`
+is each element of `buttons`, `button[0]` is the text inside the button,
+`button[1]` is colour of the button(Just applies it as a class and Materialize
+does the rest), and `button[2]` is the callback function for when the button is
+clicked.
+
+### site.notify_toggle()
+Toggles the visibility of the modal defined above
+
+### site.auth(userID:string, session:string, callback:function)
+Authenticates the user with the core and sends the user information to the
+callback function.
+
+### site.append_stack(callback:function, num_times:number)
+Gets around some JavaScript quirks for when something is not loading because
+other elements on the page haven't finished loading yet. takes the supplied
+function and appends it to the end of the JavaScript execution stack
+(JavaScript runs in a single thread). Num_times, is the number of times you want
+it to stick it to the end of the stack. If you're using this, you're probably
+doing something wrong, it's there if you really need it.
+
+### site.login(username:string, password:string, success:function, fail:function)
+Uses the core APIs to authenticate a user with no current session. Executes
+`success` on success and `fail` on fail.
+
+### site.logout()
+logs out the current user from their session and destroys all relevant cookies.
+
+## rtm.js
+
+RTM stands for "real-time-mongo", and is a document storage method that allows
+you to not only get constantly updated streams of data instead of stagnant
+static responses, but it also gives you full confidence that you data will not
+be seen by anyone to is not authenticated to do so. As each user only has
+information that they are authenticated to see, it is fully compatible with a
+P2P style distribution, where new content can be echoed from user to user
+instead of having a bajillion connection streams to the DB.
+
+As for using RTM, it's quite simple. `rtm.js` defines the global `RTM` class.
+You can instantiate this class to begin your session with the server.
+
+Each document in the database lists the sender and recipient of the document,
+and only those who can authenticate as either of these can read the information.
+
+### rtm.listen(conf{collection:string, sender_pair:array[username:string, session:string], recipient_pairs:array[array[username:string, session:string],...], backlog:bool})
+Starts listening to the specified stream of data. `collection` is the collection
+to read from, `sender_pair` is the username and session token of the sender(you),
+`recipient_pairs` is an array of arrays of usernames and session IDs of the recipients that you are claiming to be.
+
+### rtm.send(collection:string, sender_pair:array, recipient:string, data:\*)
+Sends data to a specified recipient, posting in `collection`.
