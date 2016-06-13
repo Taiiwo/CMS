@@ -158,6 +158,98 @@ function Site() {
         $(window).trigger('auth_changed');
         site.toast('Logged out.');
     }
+
+    // toggles the loading animation
+    this.loading = function(toggle){
+      if (toggle) {
+        $("body").append(
+          // loader background
+          $('<div>').css({
+              position: "absolute", "z-index": "10", width: 100, height: 100,
+              left: 0, bottom: 0, top: 0, right: 0, "background-color": "black",
+              opacity: "0.2", "border-radius": 20, margin: "auto"
+            }).fadeIn('slow').attr('id', 'haze')
+          ,
+          // materialize loader
+          $('<div/>')
+            .addClass('preloader-wrapper big active')
+            .css({
+              position: "absolute", "z-index": 20, top: 0, left: 0, right: 0,
+              bottom: 0, margin: "auto"
+            }).fadeIn('slow').attr('id', "wheel").append(
+              $("<div/>")
+                .addClass('spinner-layer spinner-blue')
+                .append($('<div/>').addClass('circle-clipper left').append(
+                  $('<div/>').addClass('circle')
+                )
+                ,
+                  $('<div/>')
+                    .addClass('gap-patch')
+                    .append($('<div/>').addClass('circle'))
+                ,
+                  $('<div/>')
+                    .addClass('circle-clipper right')
+                    .append($('<div/>').addClass('circle'))
+                )
+            ,
+              $("<div/>")
+                .addClass('spinner-layer spinner-red')
+                .append($('<div/>').addClass('circle-clipper left').append(
+                  $('<div/>').addClass('circle')
+                )
+                ,
+                  $('<div/>')
+                    .addClass('gap-patch')
+                    .append($('<div/>').addClass('circle'))
+                ,
+                  $('<div/>')
+                    .addClass('circle-clipper right')
+                    .append($('<div/>').addClass('circle'))
+                  )
+              ,
+                $("<div/>").addClass('spinner-layer spinner-yellow').append(
+                    $('<div/>').addClass('circle-clipper left').append(
+                        $('<div/>').addClass('circle')
+                    )
+                  ,
+                    $('<div>').addClass('gap-patch').append(
+                      $('<div>').addClass('circle')
+                    )
+                  ,
+                    $('<div/>')
+                      .addClass('circle-clipper right')
+                      .append(
+                        $('<div/>')
+                          .addClass('circle')
+                      )
+                  )
+              ,
+                $("<div/>")
+                  .addClass('spinner-layer spinner-green').append(
+                    $('<div/>').addClass('circle-clipper left').append(
+                      $('<div/>').addClass('circle')
+                    )
+                  ,
+                    $('<div/>').addClass('gap-patch').append(
+                        $('<div/>').addClass('circle')
+                    )
+                  ,
+                    $('<div/>').addClass('circle-clipper right').append(
+                        $('<div/>').addClass('circle')
+                    )
+                  )
+              )
+        );
+        return true;
+      }
+      $('body > #haze').fadeOut('slow', function(){
+        $('body > #haze').remove();
+      });
+      $('body > #wheel').fadeOut('slow', function(){
+        $('body > #wheel').remove();
+      });
+      return false;
+    }
 }
 window.$$ = document.querySelector;
 var site = new Site();
