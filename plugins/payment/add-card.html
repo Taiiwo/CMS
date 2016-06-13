@@ -27,8 +27,10 @@
           var form = $('json-to-form')[0];
           self = this;
           form.onsubmit = function(event){
+            site.loading(true);
             site.plugin_api('payment', 'add-card', form.serialize(), function(data){
               if (data.success){
+                site.loading(false);
                 site.toast("Payment method added");
                 user_data.nmi_vaults = data.vaults;
                 if (self.product_id){
