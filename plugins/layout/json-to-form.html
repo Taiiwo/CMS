@@ -98,30 +98,6 @@ var global_config;
         return global_config;
       },
       onsubmit: function(a) {console.log(a)},
-      loading: function(toggle) {
-        // replace button icon with loading animation
-        var button = $(this);
-        if (toggle) {
-          button.children("i").replaceWith(
-            $("<div>").addClass("spinner-layer", "spinner-green").append(
-              $("<div>").addClass("circle-clipper", "left").append(
-                $("<div>").addClass("circle")
-              ),
-              $("<div>").addClass("gap-patch").append(
-                $("<div>").addClass("circle")
-              ),
-              $("<div>").addClass("circle-clipper", "right").append(
-                $("<div>").addClass("circle")
-              )
-            )
-          );
-          return true;
-        }
-        button.children("div.spinner-layer").replaceWith(
-          $("<i>").addClass("material-icons").text("save")
-        );
-        return false;
-      },
       attached: function() {
         self = this;
         function titleify(key){
