@@ -1,42 +1,55 @@
 <dom-module id="account-settings">
     <template>
+        <script src="auth.js"></script>
         <style>
+            :host {
+              height: 100%;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+            }
+
+            #password {
+              width: 600px;
+            }
+
             h2 {
-                font-size: 240%;
+              color: rgba(224, 0, 50, 0.8);
+              font-size: 42pt;
+            }
+
+            paper-button {
+              width: calc(50% - 5px);
+              float: left;
+              background-color: rgba(224, 0, 50, 0.8);
+              margin: 20px 0 !important;
+              color: white;
+            }
+
+            #password-button {
+              margin-right: 5px !important;
+            }
+
+            #delete-button {
+              margin-left: 5px !important;
+            }
+
+            paper-input {
+              --paper-input-container-focus-color: rgba(224, 0, 50, 0.8);
             }
         </style>
-        <div class="register-div">
-        <div class="container">
-            <div id="md">
-### My Account Settings
-
-Welcome to your account settings. Only you can see this page. You can use the
-features on this page to edit key details about your account.
-            </div>
-            <form id="chpass_form" action="#">
-                <div class="row">
-                    <div class="col s12">
-                        <div class="input-field col s3">
-                            <input id="cur_password" name="cur_password" type="password" class="validate">
-                            <label for="cur_password">Current Password</label>
-                        </div>
-                        <div class="input-field col s3">
-                            <input id="new_password_a" name="new_password" type="password" class="validate">
-                            <label for="new_password_a">New Password</label>
-                        </div>
-                        <div class="input-field col s3">
-                            <input id="new_password_b" type="password" class="validate">
-                            <label for="new_password_b">Confirm New Password</label>
-                        </div>
-                        <div class="col s3">
-                            <button class="waves-effect waves-light btn" type="submit">
-                              <i class="material-icons right">send</i>Change Password
-                            </button>
-                        </div>
-                    </div>
-                </div>
+        <div id="password">
+            <h2>My Account</h2>
+            <p>Welcome to your account settings. Only you can see this page. You can use the features on this page to edit key details about your account.</p>
+            <form id="password-form" action="#">
+                <paper-input id="old-password" type="password" label="Current Password"></paper-input>
+                <paper-input id="new-password" type="password" label="New Password"></paper-input>
+                <paper-input id="confirm-password" type="password" label="Confirm New Password"></paper-input>
+                
+                <paper-button raised id="password-button">Change Password</paper-button>
+                <paper-button raised id="delete-button">Delete Account</paper-button>
             </form>
-            <a id="delete" class="waves-effect waves-light btn red"><i class="material-icons right">warning</i>Delete Account</a>
         </div>
     </template>
 </dom-module>
@@ -45,11 +58,11 @@ features on this page to edit key details about your account.
         is: "account-settings",
         attached: function() {
             $("#chpass_form").submit(function() {
-              var new_password_a = $("#new_password_a").val();
-              var new_password_b = $("#new_password_b").val();
+              var new_password = $("#new-password").val();
+              var confirm_password = $("#confirm-password").val();
 
-              if (!(new_password_a === new_password_b)) {
-                site.toast("Passwords do not match");
+              if (!(new_password === confirm_password)) {
+                console.log("Passwords do not match");
                 return;
               }
               site.api(
@@ -57,10 +70,10 @@ features on this page to edit key details about your account.
                 $(this).serialize(),
                 function(data) {
                   if (data.success) {
-                    site.toast("Password changed.");
+                    console.log("Password changed.");
                     $(this).reset();
                   } else {
-                    site.toast(data.errors[0].details)
+                    console.log(data.errors[0].details)
                   }
                 }
               )
@@ -77,11 +90,8 @@ features on this page to edit key details about your account.
             var userAuthed = true;
             var session = Cookies.get('session');
 
-            // markup markdown
-            site.markdown('#md');
-
             if (userAuthed){
-                $('#delete').click(function(){
+                $('#delete-button').click(function(){
                     site.notify(
                         "Are you sure?",
                         "This action will delete you entire account, with no" +

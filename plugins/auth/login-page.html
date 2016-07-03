@@ -1,36 +1,51 @@
 <dom-module id="login-page">
     <template>
+        <script src="auth.js"></script>
         <style>
-            h2 {
-                font-size: 240%;
+            :host {
+              height: 100%;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
             }
-            .skillSlider {
-                width: 100%;
-                max-width: 440px;
+
+            #login {
+              width: 600px;
+            }
+
+            h2 {
+              color: rgba(224, 0, 50, 0.8);
+              font-size: 42pt;
+            }
+
+            #login-form {
+              display: flex;
+              display: -ms-flex;
+              display: -webkit-flex;
+              flex-direction: column;
+            }
+
+            paper-button {
+              width: 200px;
+              background-color: rgba(224, 0, 50, 0.8);
+              margin: 20px 0 !important;
+              align-self: flex-end;
+              color: white;
+            }
+
+            paper-input {
+              --paper-input-container-focus-color: rgba(224, 0, 50, 0.8);
             }
         </style>
-        <div class="register-div">
-        <div class="container">
-            <h2>Login</h2>
-            <p>Click to <a id="register_link">Register</a></p>
-            <form id="login-form" action="/api/1/register" method="POST">
-              <div class="row">
-                  <div class="input-field col s6">
-                      <input value="" id="username" type="text" class="validate" pattern=".{1,140}">
-                      <label class="active" for="username" data-error="Too long!">Username</label>
-                  </div>
-              </div>
-              <div class="row">
-                  <div class="input-field col s6">
-                      <input value="" id="password" type="password" class="validate"  pattern=".{6,140}">
-                      <label data-error="Too short!" class="active" for="password">Password</label>
-                  </div>
-              </div>
-              <button id="login" class="btn waves-effect waves-light" type="submit" name="action">
-                  Login
-                  <i class="material-icons right">send</i>
-              </button>
-            </form>
+        <div id="login">
+          <h2>Login</h2>
+          <form id="login-form" action="/api/1/register" method="POST">
+            <paper-input label="Username" type="text" id="username"></paper-input>
+            <paper-input label="Password" type="password" id="password"></paper-input>
+            <paper-button raised id="login-button">Login</paper-button>
+            <input type="submit" hidden />
+          </form>
         </div>
     </template>
 </dom-module>
@@ -38,17 +53,17 @@
     Polymer({
         is: "login-page",
         attached: function() {
-            $('#register_link').click(function() {
-                site.route('/register');
-            });
             if (site.userAuthed()){
                 // already logged in, you don't need to be here
-                site.route('/');
+                site.route('/my-account');
             }
             $('#login-form').submit(function(){
                 site.login($('#username').val(), $('#password').val());
                 return false;
             });
+            $("#login-button").click(function() {
+              $("#login-form").submit();
+            })
         }
     });
 </script>

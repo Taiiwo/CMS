@@ -8,26 +8,14 @@ DEFAULT_CONFIG_PATH = "./config.json"
 
 default_config = {
     "allow_config_writing": True,
-    "force_email_submission": False,
     "allow_login_with_email": False,
-    "verify_emails": True,
     "secret_key": b2a_hex(urandom(32)).decode("utf8"),
-    "emails_are_unique": True,
     "port": 5000,
     "bind_addr": "0.0.0.0",
 
     "debug": False,
 
     "plugins": {
-        "blog": {
-            "enabled": True
-        },
-        "layout": {
-            "enabled": True
-        },
-        "auth": {
-            "enabled": True
-        },
     },
 
     "scheduling": {
@@ -38,8 +26,7 @@ default_config = {
     "mongo": {
         "host": "localhost",
         "port": 27017,
-        "default_db": "component",
-        "auth_db": "auth",
+        "default_db": "taii_comp",
     }
 }
 

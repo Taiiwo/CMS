@@ -1,5 +1,5 @@
 from flask import make_response, jsonify
-from flask.ext.cors import CORS
+from flask_cors import CORS
 
 from .. import app, util, config, root_logger
 
@@ -109,6 +109,5 @@ def make_error_response(*args, **kwargs):
 
 # has to go at the bottom to make sure functions are defined before we use them
 from . import (
-    user,
     errors,
 )

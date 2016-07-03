@@ -4,7 +4,7 @@ import importlib
 import pip
 import sys
 
-from flask import send_from_directory, abort, render_template
+from flask import send_from_directory, abort, render_template, render_template_string
 
 from . import app, config, save_config, site, merge_dicts, root_logger
 
@@ -83,7 +83,7 @@ def load_plugin(plugin_name):
     if plugin_name not in plugins:
         refresh_plugins()
         if plugin_name not in plugins:
-            raise ValueError("Plugin '%s' does not exist but was specified in the config.")
+            raise ValueError("Plugin '%s' does not exist but was specified in the config." % plugin_name)
 
     plugin = plugins[plugin_name]
     if os.path.exists(os.path.join("plugins", plugin_name, "__init__.py")):
@@ -105,8 +105,19 @@ def load_plugin(plugin_name):
                         save_config()
                         return
 
+        for dep in plugin["depends"]:
+            if dep not in config["plugins"]:
+                logger.fatal("Could not enable '%s'. Plugin does not exist." % dep)
+                raise SystemExit()
+
+            if not config["plugins"][dep]["enabled"]:
+                logger.warn("Enabling '%s' as a requirement of '%s'." % (dep, plugin["name"]))
+                load_plugin(dep)
+                config["plugins"][dep]["enabled"] = True
+                save_config()
+
         plugin["import"] = getattr(__import__("plugins.%s" % plugin_name), plugin_name)
-        plugin["import"].main(plugin["config"])
+        plugin["import"].main(app, plugin["config"])
 
     if "pages" in plugin:
         for path, page in plugin["pages"].items():
@@ -129,19 +140,43 @@ def load_plugins():
             continue
         load_plugin(plugin_name)
 
-
 load_plugins()
+
+def get_plugin(plugin_name):
+    # returns the imported object for <plugin name>
+    try:
+        plugin = plugins[plugin_name]
+    except ValueError:
+        raise ValueError("Plugin '%s' could not be found.")
+
+    try:
+        return plugin["import"]
+    except ValueError:
+        raise ImportError("Plugin '%s' does not have anything to import.")
 
 @app.route("/plugins/<string:plugin>/<path:path>")
 def plugin_file_resolver(plugin, path):
     plugin = plugin.lower()
     try:
         if config["plugins"][plugin]["enabled"]:
-            # serve from root dir, not flasks root
+            # serve from plugin root dir, not flasks root
             f_dir = os.path.join(os.path.abspath("."), "plugins", plugin)
 
-            # this appears to be secure. might need more testing.
-            return send_from_directory(f_dir, path)
+
+            if "templates" in plugins[plugin] and path in plugins[plugin]["templates"]:
+                f_path = os.path.join(f_dir, path)
+                if f_path.startswith(f_dir):
+                    return render_template_string(
+                        open(f_path).read(),
+                        config=config["plugins"][plugin],
+                        global_config=config,
+                        plugin=plugins[plugin]
+                    )
+                else:
+                    abort(500)
+            else:
+                # this appears to be secure. might need more testing.
+                return send_from_directory(f_dir, path)
     except KeyError:
         abort(404)
 

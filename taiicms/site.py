@@ -6,10 +6,6 @@ from flask import render_template
 
 pages = {}
 
-@app.route('/<path:path>')
-def everything(path):
-    return app.send_static_file(path)
-
 
 @app.route("/")
 def index():

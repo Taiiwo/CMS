@@ -85,21 +85,23 @@ class Util:
                         request['sender_pair'][0]
                     ].remove(socket)
                 matches = True
-                if socket.where_recipient:
+                if socket.where_recipient != (False,):
                     for clause in socket.where_recipient:
                         if document[clause] != socket.where_recipient[clause]:
                             matches = False
                 if matches:
                     socket.emit('data_sent', document)
-        if request['recipient'] in socket_subscribers['recipients']:
-            for socket in socket_subscribers['recipients'][request['recipient']]:
+        if 'recipient' in request and request['recipient']\
+                in socket_subscribers['recipients']:
+            for socket in \
+                    socket_subscribers['recipients'][request['recipient']]:
                 # check for dead sockets
                 if socket.connected == False:
                     socket_subscribers['recipients'][
                         request['recipient']
                     ].remove(socket)
                 matches = True
-                if socket.where_sender:
+                if socket.where_sender != (False,):
                     for clause in socket.where_sender:
                         if document[clause] != socket.where_sender[clause]:
                             matches = False
@@ -110,7 +112,7 @@ class Util:
                 elif not socket.recipient_sender:
                     if matches:
                         socket.emit('data_received', document)
-        else: return False
+        return True
 
     # Stores information in the specified collection
     def store(self, data, collection, visible=False, db=False):
@@ -151,6 +153,30 @@ class Util:
         )
         return data
 
+    def update_document(self, document, sender_pair, document_id, collection):
+        # authenticate the sender
+        sender = self.auth(sender_pair[0], sender_pair[1])
+        # die if the sender was not found
+        if not sender: return False
+        # get the old data
+        cursor = self.get_collection(collection)
+        old_document = cursor.find_one({
+            "_id": ObjectId(document_id)
+        })
+        document_update = {
+            "$set": {
+                "data": document,
+                "ts": time.time()
+            },
+            "$push": {
+                "revisions": old_document['data']
+            }
+        }
+        new_document = cursor.update_one(old_document, document_update)
+        print (new_document)
+        return cursor.find_one({
+            "_id": ObjectId(document_id)
+        })
 
     def get_collection(self, name, db=False):# Gets a collection from mongo-db
         if db:

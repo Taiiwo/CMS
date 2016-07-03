@@ -1,78 +1,101 @@
 <dom-module id="register-page">
+    <link rel="import" href="/static/components/iron-form/iron-form.html"
+    <script src="auth.js"></script>
+    <style>
+        :host {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #register {
+            width: 600px;
+        }
+
+        h2 {
+            color: rgba(224, 0, 50, 0.8);
+            font-size: 42pt;
+        }
+
+        #register-form {
+            display: flex;
+            display: -ms-flex;
+            display: -webkit-flex;
+            flex-direction: column;
+        }
+
+        paper-button {
+            width: 200px;
+            background-color: rgba(224, 0, 50, 0.8);
+            margin: 20px 0 !important;
+            align-self: flex-end;
+            color: white;
+        }
+
+        paper-input {
+          --paper-input-container-focus-color: rgba(224, 0, 50, 0.8);
+        }
+    </style>
     <template>
-        <style>
-            h2 {
-                font-size: 240%;
-            }
-            .skillSlider {
-                width: 100%;
-                max-width: 440px;
-            }
-        </style>
-        <div class="register-div">
-        <div class="container">
+        <div id="register">
             <h2>Sign Up</h2>
-            <form id="signup-form" action="/api/1/register" method="POST">
-              <div class="row">
-                  <div class="input-field col s6">
-                      <input value="" name="username" id="username" type="text" class="validate" pattern="\w{1,140}">
-                      <label class="active" for="username" data-error="Too long!">Username</label>
-                  </div>
-              </div>
-              <div class="row">
-                  <div class="input-field col s6">
-                      <input value="" name="email" id="email" type="text" class="validate" pattern=".*@.*">
-                      <label class="active" for="email" data-error="Invalid email!">Email</label>
-                  </div>
-              </div>
-              <div class="row">
-                  <div class="input-field col s6">
-                      <input value="" name="password" id="passw" type="password" class="validate"  pattern=".{6,140}">
-                      <label data-error="Too short!" class="active" for="password">Password</label>
-                  </div>
-              </div>
-              <button id="register" class="btn waves-effect waves-light" type="submit" name="action">
-                  Submit
-                  <i class="material-icons right">send</i>
-              </button>
+
+            <form id="register_form" method="POST" action="/api/1/register">
+                <paper-input label="Username" type="text" name="username"></paper-input>
+                <paper-input label="Email" type="text" name="email"></paper-input>
+                <paper-input label="Password" type="password" name="password"></paper-input>
+
+                <paper-button raised id="register_button">Submit</paper-button>
+                <input type="submit" hidden/>
             </form>
-    </div>
+        </div>
     </template>
 </dom-module>
 <script>
-    Polymer({
-        is: "register-page",
-        attached: function() {
-            var baseUrl = "";
-            $('#signup-form').submit(function(){
-                site.api(
-                    'register',
-                    $("#signup-form").serialize(),
-                    function(data) {
-                        if (data.success) {
-                            site.toast('Registration Successful!');
-                            // set the session cookies
-                            Cookies.set('session', data['session']);
-                            Cookies.set('user_id', data['user_id']);
-                            // set a global variable for the users details
-                            window.user_data = data.user_data;
-                            // notify the user that the login was successful.
-                            site.toast('Login Successful!');
-                            $(window).trigger("auth_changed");
-                            // forward the user to the homepage
-                            site.route('/');
-                        } else {
-                            err = data.errors[0]
-                            if (err.error_name == "username_taken") {
-                                site.toast('Sorry, that username is taken.');
-                            } else {
-                                site.toast('Unexpected error');
-                            }
-                        }
-                    }
-                );
-                return false;
-            });
+  Polymer({
+    is: "register-page",
+    attached: function() {
+      var baseUrl = "";
+      var form = $(this.$.register_form);
+      var btn = $(this.$.register_button);
+      form.submit(this.register);
+      btn.click(
+        function(){
+          form.submit();
+          return false;
         }
-    });
+      );
+    },
+    register: function() {
+      site.plugin_api(
+        "auth",
+        "register",
+        $(this).serialize(),  // jquery overwrote `this` so we have to re-select the form
+        function(data) {
+          if (data.success) {
+            site.toast("Registration Successful!");
+            // set the session cookies
+            Cookies.set("session", data["session"]);
+            Cookies.set("user_id", data["user_id"]);
+            // set a global variable for the users details
+            window.user_data = data.user_data;
+            // notify the user that the login was successful.
+            site.toast("Login Successful!");
+            $(window).trigger("auth_changed");
+            // forward the user to the homepage
+            site.route("/");
+          } else {
+            err = data.errors[0]
+            if (err.name == "username_taken") {
+              site.toast("Sorry, that username is taken.");
+            } else {
+              site.toast("Unexpected error");
+            }
+          }
+      });
+      return false;
+    }
+  });
 </script>
