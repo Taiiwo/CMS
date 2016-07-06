@@ -33,6 +33,10 @@
       .pointer {
         cursor: pointer;
       }
+      
+      .input-field {
+        width: 80%;
+      }
     </style>
     <div id="admin-div">
       <div id="json-editor-gui">
@@ -95,7 +99,7 @@ var global_config;
         load_json(json);
       },
       serialize: function() {
-        return global_config;
+        return self.serialize_obj;
       },
       onsubmit: function(a) {console.log(a)},
       attached: function() {
@@ -110,8 +114,28 @@ var global_config;
           });
           return title;
         }
+        // Sets all arrays to their first value
+        function default_serialize(objt){
+          var obj = $.extend({}, objt);
+          $.each(obj, function(index, value) {
+            switch (typeof value){
+              case "object":
+                if ((!!value) && (value.constructor === Object)){
+                  obj[index] = default_serialize(value);
+                }
+                else {
+                  obj[index] = value[0];
+                }
+                break;
+            }
+          });
+          return obj;
+        }
         // loads a node (sub object) into the editor
         function load_node(obj, node_path) {
+          if (typeof self.serialize_obj == "undefined"){
+            self.serialize_obj = default_serialize(obj);
+          }
           path = node_path.split(",");
           // get the current object to edit
           node = get_node(obj, node_path);
@@ -156,50 +180,72 @@ var global_config;
             // add the right input type for the data type
             switch (typeof value){
               case "object":
-                // it's another object, so make a link to edit that object
+                if ((!!value) && (value.constructor === Object)){
+                  // it's another object, so make a link to edit that object
+                  settings.append(
+                    table_row($("<a>")
+                        .click(on_item_clicked)
+                        .text(titleify(index))
+                      ,
+                      $('<span>'),
+                      this_node_path
+                    )
+                  );
+                }
+                else {
+                  var options = $('<select/>').on("change", dropdown_value_selected);
+                  for ( var i in value){
+                    options.append($('<option/>').val(i).text(value[i]));
+                  }
+                  var dropdown = $('<div/>')
+                    .addClass('input-field')
+                    .append(options)
+                  ;
+                  settings.append(
+                    table_row(
+                      $('<span>').text(titleify(index) + ':'),
+                      dropdown,
+                      this_node_path
+                    )
+                  );
+                }
+                break;
+              case "boolean":
                 settings.append(
-                  table_row($("<a>")
-                      .click(on_item_clicked)
-                      .text(titleify(index))
+                  table_row(
+                    $('<span>').text(titleify(index) + ':'),
+                    $('<span>').append(
+                      $("<input>")
+                        .attr("type", "checkbox")
+                        .attr("id", "checkbox-" + this_node_path)
+                        .attr("checked", value)
+                        .change(checkbox_change)
+                      ,
+                      $("<label>")
+                        .attr("for", "checkbox-" + this_node_path)
+                      )
                     ,
-                    $('<span>'),
                     this_node_path
                   )
                 );
                 break;
-            case "boolean":
-              settings.append(
-                table_row(
-                  $('<span>').text(titleify(index) + ':'),
-                  $('<span>').append(
+              default:
+                settings.append(
+                  table_row(
+                    $('<span>').text(titleify(index) + ':'),
                     $("<input>")
-                      .attr("type", "checkbox")
-                      .attr("id", "checkbox-" + this_node_path)
-                      .attr("checked", value)
-                      .change(checkbox_change)
+                      .val(value)
+                      .attr("type", "text")
+                      .addClass("json-editor-gui-input input-field")
+                      .keyup(keyup_value_editor)
                     ,
-                    $("<label>")
-                      .attr("for", "checkbox-" + this_node_path)
-                    )
-                  ,
-                  this_node_path
-                )
-              );
-              break;
-            default:
-              settings.append(
-                table_row(
-                  $('<span>').text(titleify(index) + ':'),
-                  $("<span>")
-                    .attr("data-type", typeof value)
-                    .text(value)
-                    .click(show_value_editor)
-                  ,
-                  this_node_path
-                )
-              );
+                    this_node_path
+                  )
+                );
             }
           });
+          // init the dropdowns
+          $('select').material_select();
         }
 
         // returns the object at given node_path in obj
@@ -218,11 +264,15 @@ var global_config;
 
         // saves a value to a given path within an object
         function save_node(obj, node_path, value) {
-          node_keys = node_path.split(",");
+          var node_keys = node_path.split(",");
           // gets the key of the value
-          key = node_keys[node_keys.length - 1];
+          var key = node_keys[node_keys.length - 1];
           // gets the current node
-          node = get_node(obj, node_keys.slice(0, -2).join(","));
+          var node = get_node(obj, node_keys.slice(0, -1).join(","));
+          var serial_node = get_node(
+            self.serialize_obj,
+            node_keys.slice(0, -1).join(",")
+          );
           switch (typeof node[key]) {
             case "number":
               value = parseFloat(value);
@@ -238,6 +288,7 @@ var global_config;
               }
           }
           node[key] = value;
+          serial_node[key] = value;
           return node;
         }
 
@@ -267,8 +318,23 @@ var global_config;
         // on return or escape inside a text box
         function keyup_value_editor(event) {
           if (event.keyCode == 13 || event.keyCode == 27) { // enter or esc
-            $(this).blur();
+            //
           }
+          save_node(
+            global_config,
+            $(this).attr('data-nodepath'),
+            $(this).val()
+          );
+          return true;
+        }
+        
+        function dropdown_value_selected(e){
+          save_node(
+            global_config,
+            $($(this).parents()[1]).attr('data-nodepath'),
+            $($(this).children()[$(this).val()]).text()
+          );
+          return true;
         }
 
         // on checkbox change
