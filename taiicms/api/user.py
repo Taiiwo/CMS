@@ -158,7 +158,7 @@ def create_user(username, password, details={}, session_salt=None,
 def get_safe_user(user):
     if isinstance(user, dict):
         safe_user = {}
-        for key in ["username", "display_name", "details", "is_datachest", "datachests"]:
+        for key in ["username", "display_name", "details", "is_datachest", "datachests", "is_admin"]:
             safe_user[key] = user[key]
         return safe_user
     else:
