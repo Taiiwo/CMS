@@ -17,6 +17,9 @@
     "/manage-products":{
       "file_path": "manage-products.html"
     },
+    "/create-product":{
+      "file_path": "create-product.html"
+    },
     "/payment-methods": {
       "file_path": "payment-methods.html"
     }

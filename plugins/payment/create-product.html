@@ -1,0 +1,46 @@
+<link rel="import" href="../layout/json-to-form.html" />
+<link rel="import" href="../layout/taii-markdown.html" />
+<link rel="import" href="../layout/taii-input.html" />
+<dom-module id="create-product">
+    <template>
+        <style>
+            /**/
+        </style>
+        <taii-markdown>
+Create Product
+---------------
+This page allows you add new products to your database.
+        </taii-markdown>
+        <div class="container">
+          <json-to-form form-title="Create Product">
+            {
+              "require_shipping": false,
+              "recur_options": {
+                "recur": false,
+                "recur_type": ["at_day", "ndays"],
+                "recur_ndays": 0
+              },
+              "amount": 0.00,
+              "name": "",
+              "desc": "",
+              "file_id": false,
+              "type": ["recuring", "onetime", "prepaid"],
+              "ongoing": false
+            }
+          </json-to-form>
+        </div>
+    </template>
+</dom-module>
+<script>
+    Polymer({
+        is: "create-product",
+        attached: function() {
+          if (!site.userAuthed() && typeof(user_data.is_admin) != "undefined") {
+            site.route('/login');
+            site.toast('Authentication required');
+            return false;
+          }
+        }
+        
+    });
+</script>
