@@ -35,9 +35,14 @@ This page allows you add new products to your database.
     Polymer({
         is: "create-product",
         attached: function() {
-          if (!site.userAuthed() && typeof(user_data.is_admin) != "undefined") {
+          if (!site.userAuthed()) {
             site.route('/login');
             site.toast('Authentication required');
+            return false;
+          }
+          if (!user_data.is_admin){
+            site.route('/');
+            site.toast('Access denied.');
             return false;
           }
         }
