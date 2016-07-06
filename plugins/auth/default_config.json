@@ -1,0 +1,21 @@
+{
+  "email": {
+    "enabled": false,
+    "required": false,
+    "do_verify": false,
+    "allow_login": true,
+    "are_unique": true,
+
+    "from": "webmaster@notconfiged.inc",
+    "smtp": {
+      "host": "localhost",
+      "port": null,
+      "username": null,
+      "password": null
+    }
+  },
+  "mongo":{
+    "db": "dshbrd_auth",
+    "col": "users"
+  }
+}
