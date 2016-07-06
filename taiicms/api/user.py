@@ -139,6 +139,7 @@ def create_user(username, password, details={}, session_salt=None,
 
     # construct user model
     user_data = {
+        "is_admin": False,
         "username": username.lower(),
         "display_name": username,
         "passhash": passhash,   # Effective permanent salt
