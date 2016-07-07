@@ -1,16 +1,10 @@
 <link rel="import" href="../layout/json-to-form.html" />
-<link rel="import" href="../layout/taii-markdown.html" />
 <link rel="import" href="../layout/taii-input.html" />
-<dom-module id="create-product">
+<dom-module id="create-product" attributes="product_id">
     <template>
         <style>
             /**/
         </style>
-        <taii-markdown>
-Create Product
----------------
-This page allows you add new products to your database.
-        </taii-markdown>
         <div class="container">
           <json-to-form form-title="Create Product">
             {
@@ -35,12 +29,60 @@ This page allows you add new products to your database.
     Polymer({
         is: "create-product",
         attached: function() {
+          var self = this;
+          $('json-to-form')[0].onsubmit = function(data){
+            var rtm = new RTM();
+            rtm.ws.on("error", function(e){console.log(e)});
+            if (typeof self.product_id == "undefined"){
+              rtm.send({
+                collection: 'products',
+                senderID_type: 'username',
+                recipientID_type: 'username',
+                sender_pair: user_data.datachests['Products'],
+                recipient: "Public",
+                data: data
+              });
+              site.toast("Product created");
+            }
+            else {
+              rtm.update({
+                collection: 'products',
+                senderID_type: 'username',
+                recipientID_type: 'username',
+                sender_pair: user_data.datachests['Products'],
+                document_id: self.product_id,
+                data: data
+              });
+              site.toast("Product updated");
+            }
+            //rtm.ws.close();
+            site.route("/manage-products");
+          }
+          if (typeof this.product_id != "undefined"){
+            // a product was submitted for editing
+            var rtm = new RTM();
+            rtm.listen({
+              collection: 'products',
+              recipientID_type: "username",
+              senderID_type: "username",
+              sender_pair: ["Public", rtm.blank_sha512],
+              recipient_pairs: [['Public', rtm.blank_sha512]],
+              recipient_senders: ['Products'],
+              where_recipient: {'_id': this.product_id},
+              backlog: true
+            });
+            rtm.ws.on('data_received', function(data){
+              site.append_stack(function(){ 
+                $('json-to-form')[0].load_json(data.data);
+              });
+            });
+          }
           if (!site.userAuthed()) {
             site.route('/login');
             site.toast('Authentication required');
             return false;
           }
-          if (!user_data.is_admin){
+          if (typeof user_data.datachests["Products"] == "undefined"){
             site.route('/');
             site.toast('Access denied.');
             return false;
