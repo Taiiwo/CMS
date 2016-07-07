@@ -15,7 +15,8 @@ def main(config):
     payments_config = config
     pm = False
     users = util.get_collection('users', db=util.config["auth_db"])
-    payment_user = users.find_one({"username": "payments"}, {"_id": True})
+    payment_user = users.find_one({"username": "Payments"}, {"_id": True})
+    payment_user = users.find_one({"username": "Products"}, {"_id": True})
 
 @app.route("/api/plugin/payment/add-card", methods=["POST"])
 def add_card():
@@ -137,7 +138,7 @@ def get_payment_methods():
 def get_product(product_id):
     products = util.get_collection('products')
     product_id = ObjectId(product_id) if type(product_is) is str else product_id
-    return products.find_one({'_id': product_id, sender: payment_user['_id']})
+    return products.find_one({'_id': product_id, sender: products_user['_id']})
 
 # Posts to a datachest, but accepts money instead of a session key
 @app.route("/api/plugin/payment/make-payment", methods=['POST'])
