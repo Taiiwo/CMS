@@ -17,7 +17,6 @@ class Util:
             print("Could not connect to mongodb at %s:%s.\nMake sure the mongo server is running and the TaiiCMS config file is correct." % [config["host"], config["port"]])
             raise SystemExit()
         self.db = self.mongo[self.config['default_db']]
-        self.users = self.get_collection("users", db=self.config["auth_db"])
 
     def connect(self):
         self.mongo = pymongo.MongoClient(
@@ -34,7 +33,7 @@ class Util:
 
     def auth(self, user_id, session):
         # get user deets
-        db = self.users
+        db = self.get_collection('users', db=self.config['auth_db'])
         # find user in db
         user = db.find_one({'_id': ObjectId(user_id)})
         # check if the session is legit
@@ -67,14 +66,10 @@ class Util:
             recipients.append(recipient[0])
         return True, recipients
 
-    def update_user(self, user, update):
-        if type(user) is str:
-            userID = ObjectId(user)
-        elif type(user) is ObjectId:
-            userID = user
-        else:
-            userID = user['_id']
-        return self.users.update({
+    def update_user(self, userID, update):
+        users = self.get_collection('users', db=self.config['auth_db'])
+        userID = ObjectId(userID) if type(userID) != ObjectId else userID
+        return users.update({
             "_id": userID
         },
             update
@@ -90,21 +85,23 @@ class Util:
                         request['sender_pair'][0]
                     ].remove(socket)
                 matches = True
-                if socket.where_recipient:
+                if socket.where_recipient != (False,):
                     for clause in socket.where_recipient:
                         if document[clause] != socket.where_recipient[clause]:
                             matches = False
                 if matches:
                     socket.emit('data_sent', document)
-        if request['recipient'] in socket_subscribers['recipients']:
-            for socket in socket_subscribers['recipients'][request['recipient']]:
+        if 'recipient' in request and request['recipient']\
+                in socket_subscribers['recipients']:
+            for socket in \
+                    socket_subscribers['recipients'][request['recipient']]:
                 # check for dead sockets
                 if socket.connected == False:
                     socket_subscribers['recipients'][
                         request['recipient']
                     ].remove(socket)
                 matches = True
-                if socket.where_sender:
+                if socket.where_sender != (False,):
                     for clause in socket.where_sender:
                         if document[clause] != socket.where_sender[clause]:
                             matches = False
@@ -115,7 +112,7 @@ class Util:
                 elif not socket.recipient_sender:
                     if matches:
                         socket.emit('data_received', document)
-        else: return False
+        return True
 
     # Stores information in the specified collection
     def store(self, data, collection, visible=False, db=False):
@@ -156,6 +153,31 @@ class Util:
         )
         return data
 
+    def update_document(self, document, sender_pair, document_id, collection):
+        # authenticate the sender
+        sender = self.auth(sender_pair[0], sender_pair[1])
+        # die if the sender was not found
+        if not sender: return False
+        # get the old data
+        cursor = self.get_collection(collection)
+        old_document = cursor.find_one({
+            "_id": ObjectId(document_id)
+        })
+        document_update = {
+            "$set": {
+                "data": document,
+                "ts": time.time()
+            },
+            "$push": {
+                "revisions": old_document['data']
+            }
+        }
+        new_document = cursor.update_one({
+          "_id": ObjectId(document_id)
+        }, document_update)
+        return cursor.find_one({
+            "_id": ObjectId(document_id)
+        })
 
     def get_collection(self, name, db=False):# Gets a collection from mongo-db
         if db:
