@@ -8,9 +8,9 @@ function RTM(url){
     'cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce'+
     '47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e';
 
-    this.keys_exist = function(keys, obj){
-        for (var i in keys){
-            var key = keys[i];
+    this.keys_exist = function(key_list, obj){
+        for (var i in key_list){
+            var key = key_list[i];
             if (obj[key] == undefined){
                 return false;
             }
@@ -39,4 +39,15 @@ function RTM(url){
     }
 
     //
+    this.update = function(conf){
+      if (!this.keys_exist([
+            'collection', 'sender_pair', 'document_id', 'data'
+          ], conf)){
+        return false;
+      }
+      var self = this;
+      site.append_stack(function(){
+        self.ws.emit('update', JSON.stringify(conf));
+      });
+    }
 }
