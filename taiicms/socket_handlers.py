@@ -196,6 +196,49 @@ def send_handler(data):
     }
     util.emit_to_relevant_sockets(request, document_tidy, live_sockets)
     emit("data_sent", "Data was sent")
+  
+@socket.on("update", namespace="/component")
+def update_handler(data):
+    request = json.loads(data)
+    # validate request
+    if not "sender_pair" in request or not "document_id" in request or \
+            not "collection" in request or not "data" in request:
+        emit("error", "Invalid Arguments")
+        return False
+    sender_pair = request["sender_pair"]
+    document_id = request["document_id"]
+    collection = request["collection"]
+    document = request["data"]
+    # convert usernames to ids
+    if "senderID_type" in request and request["senderID_type"] == "username":
+        users = util.get_collection("users", db=util.config["auth_db"])
+        user = users.find_one({"username": sender_pair[0]})
+        if user:
+            sender_pair[0] = str(user["_id"])
+        else:
+            emit("error", "Sender username does not exist")
+            return False
+    # update document
+    document = util.update_document(
+        document, sender_pair, document_id, collection
+    )
+    if not document:
+        emit('error', make_error(
+            'unknown_error',
+            "Sender was not authenticated to make changes"
+        ))
+        return False
+    # send Updates
+    document_tidy = {
+        "sender": document["sender"],
+        "recipient": document["recipient"],
+        "data": document["data"],
+        "id": str(document["_id"]),
+        "ts": document["ts"],
+        "update": True
+    }
+    util.emit_to_relevant_sockets(request, document_tidy, live_sockets)
+    emit("data_sent", "Data was updated")
 
 
 @socket.on("disconnect")
