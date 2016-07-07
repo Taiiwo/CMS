@@ -95,9 +95,6 @@ var global_config;
 
   Polymer({
       is: "json-to-form",
-      load_json: function(json) {
-        load_json(json);
-      },
       serialize: function() {
         return self.serialize_obj;
       },
@@ -138,7 +135,8 @@ var global_config;
           }
           path = node_path.split(",");
           // get the current object to edit
-          node = get_node(obj, node_path);
+          var node = get_node(global_config, node_path);
+          var node_values = get_node(self.serialize_obj, node_path);
           var nav = generate_nav();
           var settings = $("#json-editor-gui-settings").empty();
           // init the breadcrumbs
@@ -195,8 +193,13 @@ var global_config;
                 else {
                   var options = $('<select/>').on("change", dropdown_value_selected);
                   for ( var i in value){
-                    options.append($('<option/>').val(i).text(value[i]));
+                    var option = $('<option/>').val(i).text(value[i]);
+                    if (node_values[index] == value[i]){
+                      option.attr("selected", "");
+                    }
+                    options.append(option);
                   }
+                  //options.val(node_values[index]);
                   var dropdown = $('<div/>')
                     .addClass('input-field')
                     .append(options)
@@ -218,7 +221,7 @@ var global_config;
                       $("<input>")
                         .attr("type", "checkbox")
                         .attr("id", "checkbox-" + this_node_path)
-                        .attr("checked", value)
+                        .attr("checked", node_values[index])
                         .change(checkbox_change)
                       ,
                       $("<label>")
@@ -234,7 +237,7 @@ var global_config;
                   table_row(
                     $('<span>').text(titleify(index) + ':'),
                     $("<input>")
-                      .val(value)
+                      .val(node_values[index])
                       .attr("type", "text")
                       .addClass("json-editor-gui-input input-field")
                       .keyup(keyup_value_editor)
@@ -366,12 +369,18 @@ var global_config;
           input.focus();
           input.select();
         }
-
-        // Takes a json string and loads it into the editor
-        function load_json(json) {
-          global_config = json;
-          load_node(json, "")
+        
+        // 
+        function apply_options(template, obj){
+          
         }
+
+        // Takes an obj and loads it into the editor
+        function load_json(json) {
+          self.serialize_obj = json;
+          load_node(json, "");
+        }
+        self.load_json = load_json;
 
         // Replaces an edited textbox with a span contain the value
         // on enter press inside a text box.
@@ -412,7 +421,8 @@ var global_config;
 
         // on load
         // load raw JSON from #json
-        load_json(JSON.parse($('#json').html()));
+        global_config = JSON.parse($('#json').html());
+        load_json(global_config);
       }
   });
 </script>
