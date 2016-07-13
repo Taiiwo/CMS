@@ -34,6 +34,8 @@ def add_card():
     if not pm:
         pm = Payment(payments_config)
     vault_unrefined = pm.create_vault(cc, exp, cvv=cvv)
+    if vault_unrefined['result'] == '3':
+      return make_error_response("data_invalid", vault_unrefined['result-text'])
     vault = {
         "cc-number": vault_unrefined['billing']['cc-number'],
         "billing-id": vault_unrefined['billing']['billing-id'],
@@ -123,12 +125,9 @@ def get_payment_methods():
     vaults = []
     for i in range(len(usern['nmi_vaults'])):
         vault = usern["nmi_vaults"][i]
-        # ignore removed vaults
-        if vault is None:
-            continue
-
-        vault['index'] = i
-        del vault['customer-vault-id']
+        if vault:
+          vault['index'] = i
+          del vault['customer-vault-id']
         vaults.append(vault)
     return make_success_response({
         "default_method": default_card,
