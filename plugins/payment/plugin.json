@@ -11,7 +11,7 @@
     "/add-card/:product_id": {
       "file_path": "add-card.html"
     },
-    "/make-payment/:product_id":{
+    "/make-payment/:products":{
       "file_path": "make-payment.html"
     },
     "/manage-products":{
