@@ -81,6 +81,9 @@ payment methods.
             $(list).children("ul").empty();
             for (var i in methods){
               var method = methods[i];
+              if (method == null){
+                continue;
+              }
               list.add_item(
                 method['cc-number'],
                 $('<span>')
