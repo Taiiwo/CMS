@@ -40,6 +40,10 @@
                   site.route('/payment-methods');
                 }
               }
+              else {
+                site.loading(false);
+                site.toast(data.extra);
+              }
             });
           };
         }
