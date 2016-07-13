@@ -91,9 +91,15 @@ def listen_handler(data):
                 )
     if "where_recipient" in request_data:
         for clause in request_data["where_recipient"]:
-            if clause == "_id":
+            value = request_data["where_recipient"][clause]
+            # if the user is trying to search for a list of ids
+            if clause == "_id" and type(value) == dict and "$in" in value:
+                # convert those ids into ObjectIds
+                for index, id_string in enumerate(value['$in']):
+                    value['$in'][index] = ObjectId(id_string)
+            if clause == "_id" and type(value) == str:
                 request_data["where_recipient"][clause] = ObjectId(
-                    request_data["where_recipient"][clause]
+                    value
                 )
     # send the user backlogs if requested
     if "backlog" in request_data and request_data["backlog"]:
