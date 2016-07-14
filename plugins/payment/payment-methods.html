@@ -14,6 +14,7 @@ payment methods.
         </taii-markdown>
         <div class="container">
           <taii-list></taii-list>
+          <div id="return-to-checkout"></div>
         </div>
         <div class="fixed-action-btn" style="bottom: 45px; right: 24px;">
           <a class="btn-floating btn-large red" href="#/add-card">
@@ -26,6 +27,16 @@ payment methods.
     Polymer({
         is: "payment-methods",
         attached: function() {
+          if (typeof window.current_checkout != "undefined"){
+            $('#return-to-checkout').append($('<a/>')
+              .addClass('btn')
+              .text("Return to Checkout")
+              .click(function(){
+              site.route('/make-payment/' +
+                         JSON.stringify(window.current_checkout));
+              })
+            );
+          }
           function on_remove_method() {
             let method_id = $(this).attr("data-method-id");
             site.plugin_api(

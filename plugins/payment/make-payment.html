@@ -37,7 +37,7 @@ Please confirm the products below that will be purchased with your default payme
         // get the default method
         if (!data.default_method){
           site.toast("Please set a default payment method");
-          site.route('/payment-methods');
+          return site.route('/payment-methods');
         }
         var method = data.payment_methods[data.default_method];
         card.empty();
@@ -60,6 +60,7 @@ Please confirm the products below that will be purchased with your default payme
       });
       // show products
       var products = JSON.parse(this.products);
+      window.current_checkout = products;
       var product_ids = [];
       for (var i in products){
         product_ids.push(i)
@@ -79,6 +80,9 @@ Please confirm the products below that will be purchased with your default payme
       });
       var self = this;
       rtm.ws.on('data_received', function(data){
+        if (!$('#products')[0]){
+          return -1;
+        }
         $('#products')[0].add_item(
           data.data.name,
           $('<span>').text(data.data.desc),
