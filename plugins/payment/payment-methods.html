@@ -72,10 +72,15 @@ payment methods.
             return false;
           }
           function to_date(ts){
-            return Date(ts).slice(0, 15);
+            let days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+            // let months = [""]
+
+            let d = new Date(ts*1000);
+            return [days[d.getDay()], d.getDate(), d.getMonth(), d.getFullYear()].join(" ");
           }
           function to_time(ts){
-            return Date(ts).slice(16, 24);
+            let d = new Date(ts*1000);
+            return [d.getHours(), d.getMinutes(), d.getSeconds()].join(":");
           }
           function display_methods(methods, default_method){
             $(list).children("ul").empty();
@@ -88,8 +93,7 @@ payment methods.
                 method['cc-number'],
                 $('<span>')
                   .text(
-                    "Added on " + to_date(method.added) +
-                    " at " + to_time(method.added)
+                    "Added at " + new Date(method.added * 1000).toLocaleString()
                   )
                   .append(
                     $("<br />"),
