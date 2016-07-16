@@ -160,7 +160,10 @@ def get_safe_user(user):
     if isinstance(user, dict):
         safe_user = {}
         for key in ["username", "display_name", "details", "is_datachest", "datachests", "is_admin"]:
-            safe_user[key] = user[key]
+            try:
+                safe_user[key] = user[key]
+            except KeyError:
+                pass
         return safe_user
     else:
         user = util.get_collection("users", db=util.config["auth_db"]).find_one({"user": user})
@@ -233,7 +236,7 @@ def api_register():
     # validate the username and password
     if not (4 <= len(username) <= 140):
         raise DataInvalid("username")
-    if not (6 <= len(password)):
+    if len(password) <= 6:
         raise DataInvalid("password")
 
     # create the user object
@@ -242,7 +245,6 @@ def api_register():
         # store the user
         user_data = users.insert(user_data)
     except DuplicateKeyError as e: # if username is not unique
-        print (e.args)
         raise UsernameTaken({"username": username})
     if config['verify_emails']:
         send_email_verification(request, user_data, email)
