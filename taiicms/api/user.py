@@ -147,9 +147,9 @@ def create_user(username, password, details={}, session_salt=None,
         "details": details,
         "session_salt": session_salt,
         "is_datachest": False,
-        "datachests": {
-            "public": ["Public", get_hash(b"")],  # add public session
-        },
+        "datachests": [
+            [util.get_uid("Public"), get_hash(b"")]  # add public session
+        ],
     }
     if email:
         user_data['email'] = email.lower()

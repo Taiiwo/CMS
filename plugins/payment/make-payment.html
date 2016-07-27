@@ -1,5 +1,6 @@
 <link rel="import" href="../layout/taii-markdown.html" />
 <link rel="import" href="../layout/taii-list.html" />
+<link rel="import" href="../layout/json-to-form.html" />
 <dom-module id="make-payment" attributes="products">
     <template>
         <style>
@@ -10,12 +11,12 @@ Confirm Your Purchase
 ---------------------
 Please confirm the products below that will be purchased with your default payment options.
         </taii-markdown>
-        <div class="container">
+        <div class="container" id="content">
           <taii-list id="card"></taii-list>
           <taii-list id="products"></taii-list>
         </div>
         <div class="fixed-action-btn" style="bottom: 45px; right: 24px;">
-          <a class="btn-floating btn-large green" href="#/add-card">
+          <a class="btn-floating btn-large green" id="send">
             <i class="large material-icons">send</i>
           </a>
         </div>
@@ -65,21 +66,21 @@ Please confirm the products below that will be purchased with your default payme
       for (var i in products){
         product_ids.push(i)
       }
-      var rtm = new RTM();
-      rtm.listen({
-        collection: 'products',
-        recipientID_type: "username",
-        senderID_type: "username",
-        sender_pair: ["Public", rtm.blank_sha512],
-        recipient_pairs: [['Public', rtm.blank_sha512]],
-        recipient_senders: ['Products'],
-        backlog: true,
-        where_recipient: {
-          "_id": {"$in": product_ids}
-        }
-      });
       var self = this;
-      rtm.ws.on('data_received', function(data){
+      self.added_shipping = false;
+      var rtm = new RTM("products", false, true);
+      rtm.listen({"_id": {"$in": product_ids}}, function (data){
+        if (data.data.require_shipping && !self.added_shipping){
+          // add a shipping form to the page
+          $('#content').append($('<json-to-form>')
+            .attr('form-title', 'Shipping information')
+            .text(JSON.stringify({
+              address_line_1: "",
+              post_code: "",
+              name_on_package: ""
+            }))
+          );
+        }
         if (!$('#products')[0]){
           return -1;
         }
@@ -99,6 +100,16 @@ Please confirm the products below that will be purchased with your default payme
             )
           )
         )
+      });
+      $('#send').click(function(){
+        for (var i in products){
+          var product = products[i];
+          site.plugin_api('payment', 'make-payment', {
+            user_id: $.Cookie('userID'),
+            session: $.Cookie('session')
+            
+          });
+        }
       });
     }
   });

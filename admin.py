@@ -85,9 +85,9 @@ if command == "datachest":
                 datachest['session_salt'] + datachest['passw']
             )
             util.update_user(userID, {
-                "$set": {
-                    'datachests.' + datachest['username']: [
-                        datachest['username'],
+                "$push": {
+                    'datachests': [
+                        str(datachest['_id']),
                         datachest_session
                     ]
                 }

@@ -3,6 +3,7 @@ import json
 import time
 import pymongo
 import hashlib
+import mongoquery
 from bson.objectid import ObjectId
 
 class Util:
@@ -55,17 +56,6 @@ class Util:
 
         return self.auth(user_id, session)
 
-    # Authenticates a listen request
-    def auth_listen(self, request):
-        if not self.auth(request['sender_pair'][0], request['sender_pair'][1]):
-            return False, False
-        recipients = []
-        for recipient in request['recipient_pairs']:
-            if not self.auth(recipient[0], recipient[1]):
-                return False, False
-            recipients.append(recipient[0])
-        return True, recipients
-
     def update_user(self, userID, update):
         users = self.get_collection('users', db=self.config['auth_db'])
         userID = ObjectId(userID) if type(userID) != ObjectId else userID
@@ -76,43 +66,24 @@ class Util:
         )
 
     # emits document to all sockets subscibed to request
-    def emit_to_relevant_sockets(self, request, document, socket_subscribers):
-        if request['sender_pair'][0] in socket_subscribers['senders']:
-            for socket in socket_subscribers['senders'][request['sender_pair'][0]]:
-                # check for dead sockets
-                if socket.connected == False:
-                    socket_subscribers['senders'][
-                        request['sender_pair'][0]
-                    ].remove(socket)
-                matches = True
-                if socket.where_recipient != (False,):
-                    for clause in socket.where_recipient:
-                        if document[clause] != socket.where_recipient[clause]:
-                            matches = False
-                if matches:
-                    socket.emit('data_sent', document)
-        if 'recipient' in request and request['recipient']\
-                in socket_subscribers['recipients']:
-            for socket in \
-                    socket_subscribers['recipients'][request['recipient']]:
-                # check for dead sockets
-                if socket.connected == False:
-                    socket_subscribers['recipients'][
-                        request['recipient']
-                    ].remove(socket)
-                matches = True
-                if socket.where_sender != (False,):
-                    for clause in socket.where_sender:
-                        if document[clause] != socket.where_sender[clause]:
-                            matches = False
-                if socket.recipient_sender\
-                        and document.sender == socket.recipient_sender:
-                    if matches:
-                        socket.emit('data_received', document)
-                elif not socket.recipient_sender:
-                    if matches:
-                        socket.emit('data_received', document)
-        return True
+    def emit_to_relevant_sockets(self, request, document, live_sockets):
+        if not request['collection'] in live_sockets\
+                or len(live_sockets[request['collection']]) < 1:
+            return False
+        # for each listener in this collection
+        for socket in live_sockets[request['collection']]:
+            # remove disconnected sockets
+            if not socket.connected:
+                live_sockets[request['collection']].remove(socket)
+                continue
+            # is the listener is waiting for sender/recipient of document
+            if mongoquery.Query({"$or": [{"sender": {"$in": socket.ids}},
+                                         {"recipient": {"$in": socket.ids}}
+                    ]}).match(document):
+                # check user defined query
+                if mongoquery.Query(socket.where).match(document):
+                    # document matches this users specifications. Send document
+                    socket.emit("data", document)
 
     # Stores information in the specified collection
     def store(self, data, collection, visible=False, db=False):
@@ -134,15 +105,11 @@ class Util:
 
     # Adds data to a collection, but so that only the recipients can recieve
     # it using the recieve_stream method
-    def send(self, data, sender_pair, recipient, collection):
-        # authenticate the sender
-        sender = self.auth(sender_pair[0], sender_pair[1])
-        # die if the sender was not found
-        if not sender: return False
+    def send(self, data, sender_id, recipient_id, collection):
         data = {
             "data": data,
-            "sender": sender_pair[0],
-            "recipient": recipient,
+            "sender": sender_id,
+            "recipient": recipient_id,
             "ts": time.time()
         }
         # store the message
@@ -153,11 +120,7 @@ class Util:
         )
         return data
 
-    def update_document(self, document, sender_pair, document_id, collection):
-        # authenticate the sender
-        sender = self.auth(sender_pair[0], sender_pair[1])
-        # die if the sender was not found
-        if not sender: return False
+    def update_document(self, data, document_id, collection):
         # get the old data
         cursor = self.get_collection(collection)
         old_document = cursor.find_one({
@@ -165,11 +128,11 @@ class Util:
         })
         document_update = {
             "$set": {
-                "data": document,
+                "data": data,
                 "ts": time.time()
             },
             "$push": {
-                "revisions": old_document['data']
+                "revisions": old_document
             }
         }
         new_document = cursor.update_one({
@@ -178,6 +141,26 @@ class Util:
         return cursor.find_one({
             "_id": ObjectId(document_id)
         })
+    
+    def escape_user_query(self, query):
+        users = False
+        if isinstance(query, list) or isinstance(query, tuple):
+            for i in range(len(query)):
+                query[i] = self.escape_user_query(query[i])
+        elif isinstance(query, dict):
+            for key, value in query.items():
+                if key == "$uid_of":
+                    if not users:
+                        users = self.get_collection("users",
+                                                    db=self.config['auth_db'])
+                    uid = str(users.find_one({"username": value})['_id'])
+                    return uid
+                elif key == "$oid":
+                    return ObjectId(value)
+                else:
+                    query[key] = self.escape_user_query(query[key])
+
+        return query
 
     def get_collection(self, name, db=False):# Gets a collection from mongo-db
         if db:
@@ -186,36 +169,24 @@ class Util:
             dbc = self.db
         return dbc[name]
 
-    # Grabs a cursor for messages directed to a list of recipients
-    # To call this method, you must be the sender, and
-    # This is so that nobody can request messages that they are not cleared to
-    # see. Note: By "being the recipients", that could either mean that you
-    # were the individual recipient, or that you were the a member of that
-    # channel or group etc.
-    def get_documents(self, sender, recipients, collection, time_order=False,
-                        recipient_senders=False, recipientID_type='id',
-                        where_recipient=False, where_sender=False):
+    # Grabs a cursor for messages directed to or from a dict of auths
+    # This restriction is so that nobody can request messages that they are
+    # not authed to see. 
+    def get_documents(self, auths, collection, time_order=False, where=False):
+        ids = list(auth[0] for auth in auths)
         # return a stream of messages directed towards the keys specified
-        sender_query = {'sender': str(sender)}
-        if where_sender:
-            sender_query.update(where_sender)
-        senders = self.get_collection(collection).find(sender_query)
-        # Specify recipient sender to only receive documents from a set of
-        # senders
-        if recipient_senders:
-            query = {
-                'recipient': {"$in": recipients},
-                'sender': {"$in": recipient_senders}
-            }
-        else:
-            query = {'recipient': {"$in": recipients}}
-        if where_recipient:
-            query.update(where_recipient)
-        recipients = self.get_collection(collection).find(query)
-        if time_order:
-            for col in (senders, recipients):
-                col.sort([('ts', pymongo.ASCENDING)])
-        return senders, recipients
+        query = {"$and": [
+            {"$or": [
+                {"sender": {"$in": ids}},
+                {"recipient": {"$in": ids}}
+            ]}
+        ]}
+        if where:
+            # Note: Appending an and means that no matter what where clause
+            # the user adds contains, it will always have to pass the first
+            # test also
+            query["$and"].append(where)
+        return self.get_collection(collection).find(query)
 
     # Makes a new datachest account. A datachest is a user that represents a
     # storage space for multiple users.
@@ -253,6 +224,10 @@ class Util:
             if key not in dicti:
                 return False
         return True
+    
+    def get_uid(self, username):
+        users = self.get_collection('users', db=self.config['auth_db'])
+        return str(users.find_one({'username': username})['_id'])
 
     def generate_import_html(self, plugin_name):
         return '<!-- %s -->\n' % plugin_name + \

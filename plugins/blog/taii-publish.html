@@ -27,73 +27,56 @@
     Polymer({
         is: "taii-publish",
         attached: function() {
-            if (typeof user_data == 'undefined'){
-                site.toast('Not logged in!');
-                site.route('/login');
-                return false;
-            }
-            var rtm = new RTM();
-            var publish = function(post){
-                rtm.send({
-                    collection: 'posts',
-                    senderID_type: 'username',
-                    recipientID_type: 'username',
-                    sender_pair: user_data.datachests['Posts'],
-                    recipient: "Public",
-                    data: post
-                });
-            }
-
-            site.append_stack(function(){
-                $('#post').click(function(){
-                    var post = {
-                        title: $('#title').val(),
-                        content: $('#content').val(),
-                        image: $('#image').val()
-                    }
-                    publish(post);
-                });
-                $('#makebs').click(function(){
-                  var bsi = new BS();
-                  bsi.initializeSentencePool();
-                  var topic = kit.randomInt(bsi.sentencePatterns.length - 1);
-                  $('#title').val(bsi.generateText(1, topic));
-                  var content = "";
-                  // 7 sentences
-                  content += bsi.generateText(7, topic);
-                  content += '\n\n';
-                  // an image
-                  content += '![nature](http://placeimg.com/640/480/nature?';
-                  content += Math.floor(Math.random() * 100);
-                  content += ")\n\n";
-                  // two more paragraphs
-                  content += bsi.generateText(8, topic);
-                  content += '\n\n';
-                  content += bsi.generateText(6, topic);
-                  content += '\n\n';
-                  // another image
-                  content += '![nature](http://placeimg.com/640/480/nature?';
-                  content += Math.floor(Math.random() * 100);
-                  content += ")\n\n";
-                  // a final paragraph
-                  content += bsi.generateText(6, topic);
-                  content += '\n\n';
-                  // A summary
-                  content += bsi.generateText(3, topic);
-                  content += '\n\n';
-                  $('#content').val(content);
-                  var image_url = 'http://placeimg.com/1920/1080/nature?' +
-                                  Math.floor(Math.random() * 100)
-                  $('#image').val(image_url);
-                });
-            });
-
-            rtm.ws.on('data_sent', function(data){
-                console.log(data);
-            });
-            rtm.ws.on('error', function(data){
-                console.log(data);
-            });
+          if (typeof user_data == 'undefined'){
+            site.toast('Not logged in!');
+            site.route('/login');
+            return false;
+          }
+          var rtm = new RTM("posts", false, true);
+          site.append_stack(function(){
+              $('#post').click(function(){
+                  var post = {
+                      title: $('#title').val(),
+                      content: $('#content').val(),
+                      image: $('#image').val()
+                  }
+                  rtm.send(post, "Posts");
+              });
+              $('#makebs').click(function(){
+                var bsi = new BS();
+                bsi.initializeSentencePool();
+                var topic = kit.randomInt(bsi.sentencePatterns.length - 1);
+                $('#title').val(bsi.generateText(1, topic));
+                var content = "";
+                // 7 sentences
+                content += bsi.generateText(7, topic);
+                content += '\n\n';
+                // an image
+                content += '![nature](http://placeimg.com/640/480/nature?';
+                content += Math.floor(Math.random() * 100);
+                content += ")\n\n";
+                // two more paragraphs
+                content += bsi.generateText(8, topic);
+                content += '\n\n';
+                content += bsi.generateText(6, topic);
+                content += '\n\n';
+                // another image
+                content += '![nature](http://placeimg.com/640/480/nature?';
+                content += Math.floor(Math.random() * 100);
+                content += ")\n\n";
+                // a final paragraph
+                content += bsi.generateText(6, topic);
+                content += '\n\n';
+                // A summary
+                content += bsi.generateText(3, topic);
+                content += '\n\n';
+                $('#content').val(content);
+                var image_url = 'https://unsplash.it/1920/1080?image=' +
+                                Math.floor(Math.random() * 1000)
+                $('#image').val(image_url);
+              });
+          });
         }
     });
+  
 </script>

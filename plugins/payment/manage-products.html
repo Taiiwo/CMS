@@ -28,50 +28,33 @@
         is: "manage-products",
         attached: function() {
             // connect to the component API
-            var rtm = new RTM();
+            var rtm = new RTM("products");
             // empty the grid after it's finished loading to the page
             site.append_stack(function(){
-                $('#grid').empty();
+              $('#grid').empty();
             });
-
-            // listen for all public documents sent by "posts" in the "posts"
-            // collection
-            rtm.listen({
-                collection: 'products',
-                recipientID_type: "username",
-                senderID_type: "username",
-                sender_pair: ["Public", rtm.blank_sha512],
-                recipient_pairs: [['Public', rtm.blank_sha512]],
-                recipient_senders: ['Products'],
-                backlog: true
-            });
-            // set document callback
-            rtm.ws.on('data_received', function(data){
-                // append post to grid after it's done loading
-                site.append_stack(function(){
-                  // do a bunch of lame JavaScript formatting
-                  $('#products')[0].add_item(
-                    data.data.name,
-                    $('<span>').text(data.data.desc),
-                    "shopping_cart",
-                    $('<div/>').append(
-                      $('<a>').attr("href", "#/edit-product/" + data.id).append(
-                        $("<i>").addClass('material-icons')
-                          .text("edit")
-                      ),
-                      $('<a>').attr("href", "#").append(
-                        $("<i>").addClass('material-icons')
-                          .text("delete")
-                      )
+            // listen for all public documents sent by "Products" in the
+            // "products" collection
+            rtm.listen({"sender": {"$uid_of": "Products"}}, function(data){
+              // append post to grid after it's done loading
+              site.append_stack(function(){
+                // do a bunch of lame JavaScript formatting
+                $('#products')[0].add_item(
+                  data.data.name,
+                  $('<span>').text(data.data.desc),
+                  "shopping_cart",
+                  $('<div/>').append(
+                    $('<a>').attr("href", "#/edit-product/" + data.id).append(
+                      $("<i>").addClass('material-icons')
+                        .text("edit")
+                    ),
+                    $('<a>').attr("href", "#").append(
+                      $("<i>").addClass('material-icons')
+                        .text("delete")
                     )
                   )
-                });
-            });
-            rtm.ws.on('data_sent', function(data){
-                console.log(data);
-            });
-            rtm.ws.on('error', function(data){
-                console.log(data);
+                )
+              });
             });
         }
     });

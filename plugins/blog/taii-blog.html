@@ -19,9 +19,11 @@
 <script>
     Polymer({
         is: "taii-blog",
+        rtm: new RTM("posts", false, true),
+        detached: function(){
+          //this.rtm.clean_up();
+        },
         attached: function() {
-            // connect to the component API
-            var rtm = new RTM();
             // empty the grid after it's finished loading to the page
             site.append_stack(function(){
                 $('#grid').empty();
@@ -29,54 +31,41 @@
 
             // listen for all public documents sent by "posts" in the "posts"
             // collection
-            rtm.listen({
-                collection: 'posts',
-                recipientID_type: "username",
-                senderID_type: "username",
-                sender_pair: ["Public", rtm.blank_sha512],
-                recipient_pairs: [['Public', rtm.blank_sha512]],
-                recipient_senders: ['Posts'],
-                backlog: true
-            });
-            // set document callback
-            rtm.ws.on('data_received', function(data){
+            this.rtm.listen(
+              {sender: {$uid_of: "Posts"}},
+              function(data){
                 // do a bunch of lame JavaScript formatting
                 var post = $('<div/>')
-                    .addClass('card blog-page')
-                    .append($('<div/>')
-                        .addClass('card-image')
-                        .append($('<img/>')
-                            .attr('src', data.data.image)
-                        ,$('<span/>')
-                            .addClass('card-title')
-                            .text(data.data.title)
-                        )
-                    ,$('<div/>')
-                        .addClass('card-content')
-                        .append($('<p/>')
-                            .text(data.data.content.slice(0,280))
-                        )
-                    ,$('<div/>')
-                        .addClass('card-action')
-                        .append($('<a/>')
-                            .attr(
-                                'href',
-                                '/#/blog/post/' + data.id + '?' + data.data.title
-                            )
-                            .text("Read more")
-                        )
+                  .addClass('card blog-page')
+                  .append($('<div/>')
+                    .addClass('card-image')
+                    .append($('<img/>')
+                      .attr('src', data.data.image)
+                    ,$('<span/>')
+                      .addClass('card-title')
+                      .text(data.data.title)
                     )
+                ,$('<div/>')
+                  .addClass('card-content')
+                  .append($('<p/>')
+                    .text(data.data.content.slice(0,280))
+                  )
+                ,$('<div/>')
+                  .addClass('card-action')
+                  .append($('<a/>')
+                    .attr(
+                      'href',
+                      '/#/blog/post/' + data.id + '?' + data.data.title
+                    )
+                    .text("Read more")
+                  )
+                  )
                 // append post to grid after it's done loading
                 site.append_stack(function(){
                     $('#posts')[0].append_grid(post);
                 });
-            });
-            rtm.ws.on('data_sent', function(data){
-                console.log(data);
-            });
-            rtm.ws.on('error', function(data){
-                console.log(data);
-            });
+              }
+            );
         }
     });
 </script>
