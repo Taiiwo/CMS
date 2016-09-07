@@ -5,29 +5,29 @@
   "depends": ["layout"],
   "conflicts": [],
   "pages": {
-    "/add-card": {
+    "/payments/add-card": {
       "file_path": "add-card.html"
     },
-    "/add-card/:product_id": {
+    "/payments/add-card/:product_id": {
       "file_path": "add-card.html"
     },
-    "/make-payment/:products":{
+    "/payments/pay/:products":{
       "file_path": "make-payment.html"
     },
-    "/manage-products":{
+    "/products/manage":{
       "file_path": "manage-products.html"
     },
-    "/create-product":{
+    "/products/create":{
       "file_path": "create-product.html"
     },
-    "/edit-product/:product_id":{
+    "/products/edit/:product_id":{
       "file_path": "create-product.html"
     },
-    "/payment-methods": {
+    "/payments/methods": {
       "file_path": "payment-methods.html"
     },
-    "/manage-products": {
-      "file_path": "manage-products.html"
+    "/payments/manage": {
+      "file_path": "manage-payments.html"
     }
   },
   "datachests": [
