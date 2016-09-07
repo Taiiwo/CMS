@@ -17,7 +17,7 @@ payment methods.
           <div id="return-to-checkout"></div>
         </div>
         <div class="fixed-action-btn" style="bottom: 45px; right: 24px;">
-          <a class="btn-floating btn-large red" href="#/add-card">
+          <a class="btn-floating btn-large red" href="#/payments/add-card">
             <i class="large material-icons">add</i>
           </a>
         </div>
@@ -32,7 +32,7 @@ payment methods.
               .addClass('btn')
               .text("Return to Checkout")
               .click(function(){
-              site.route('/make-payment/' +
+              site.route('/payments/pay/' +
                          JSON.stringify(window.current_checkout));
               })
             );
