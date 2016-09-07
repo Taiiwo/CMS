@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <!-- JS libs -->
+    <script type="text/javascript" src="/static/components/webcomponentsjs/webcomponents-lite.min.js"></script>
+    <!-- CSS -->
+    <link type="text/css" rel="stylesheet" href="/static/css/materialize.css" media="screen,projection"/>
+    <link type="text/css" rel="stylesheet" href="/static/css/main.css" media="screen,projection"/>
+    <link type="text/css" rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+    <!-- Polymer -->
+    <link rel="import" href="components/components.html">
+    <link rel="import" href="components/app-router/app-router.html">
+
+  </head>
+  <body>
+
+    <taii-navbar colour="blue lighten-1" title="TaiiCMS">
+        <span class="auth"></span>
+        <li>
+            <a href="/#/blog">Blog</a>
+        </li>
+        <li>
+            <a href="/#/my-account">Account Settings</a>
+        </li>
+    </taii-navbar>
+
+    <app-router>
+      <app-route path="/**/" import="/pages/home-page.html"></app-route>
+      {% for path, page in pages.items() %}
+          {% if "element" in page %}
+            <app-route path="{{ path }}" element="{{ page.element }}"></app-route>
+          {% elif "file_path" in page %}
+            <app-route path="{{ path }}" import="{{ page.file_path }}"></app-route>
+          {% endif %}
+      {% endfor %}
+    </app-router>
+
+  </body>
+  <div id="notify-modal" class="modal modal-fixed-footer">
+    <div class="modal-content"></div>
+    <div class="modal-footer"></div>
+  </div>
+</html>

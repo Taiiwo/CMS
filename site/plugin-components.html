@@ -1,0 +1,16 @@
+<!--
+WARNING: This file is managed by admin.py. It is NOT a config file, and changing
+a single character below this comment WILL break your CMS installation by
+re-creating the groups created by a plugin, and effectively kicking everyone
+out of them. If './admin.py plugins install' or
+'./admins.py plugins remove <plugin>' is not sufficient, then something else is
+wrong.
+-->
+
+{% for plugin_name, plugin_details in plugins.items() %}
+  {% if plugin_details.config.enabled %}
+    <!-- {{ plugin_name }}-plugin -->
+    <link rel="import" href="/plugins/{{ plugin_name }}/components.html" />
+    <!-- /{{ plugin_name }}-plugin -->
+  {% endif %}
+{% endfor %}
