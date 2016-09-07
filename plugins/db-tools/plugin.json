@@ -1,0 +1,12 @@
+{
+  "author": "Taiiwo",
+  "description": "A collection of components for easy interface with RTM",
+  "website": "https://github.com/Taiiwo/TaiiCMS",
+  "depends": ["layout"],
+  "conflicts": [],
+  "pages": {
+    "/test/:collection": {
+      "file_path": "test-page.html"
+    }
+  }
+}

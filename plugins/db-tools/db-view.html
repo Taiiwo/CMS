@@ -1,0 +1,46 @@
+<dom-module id="db-view" attributes="collection query editable appendable">
+    <template>
+        <style>
+        </style> 
+        <table id="dbv-container" class="striped">
+          <thead>
+            <tr id="table-headers"></tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+    </template>
+</dom-module>
+<script>
+    Polymer({
+      is: "db-view",
+      attached: function() {
+        // connect to the component API
+        var rtm = new RTM(this.attributes.collection.value);
+        // listen for all public documents sent by "Products" in the
+        // "products" collection
+        var headers_added = false;
+        var headers = [];
+        rtm.listen(function(data){
+          // append post to grid after it's done loading
+          var table_body = $('<tr>');
+          site.append_stack(function(){
+            if (!headers_added){
+              for (var key in data.data){
+                // add the headers to the table
+                $('#table-headers').append($('<th>').text(key));
+                headers.push(key);
+              }
+              headers_added = true;
+            }
+            for (var i in headers){
+              var key = headers[i];
+              // add the data to the body
+              table_body.append($('<td>').text(data.data[key]));
+            }
+            // add the data to the table
+            $('#table-body').append(table_body);
+          });
+        });
+      }
+    });
+</script>
