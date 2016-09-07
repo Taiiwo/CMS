@@ -38,9 +38,10 @@ Please confirm the products below that will be purchased with your default payme
         // get the default method
         if (!data.default_method){
           site.toast("Please set a default payment method");
-          return site.route('/payment-methods');
+          return site.route('/payments/methods');
         }
         var method = data.payment_methods[data.default_method];
+        self.method = method;
         card.empty();
         card[0].add_item(
           method['cc-number'],
@@ -55,7 +56,7 @@ Please confirm the products below that will be purchased with your default payme
             $('<a>')
               .addClass("btn")
               .text("Change Default Method")
-              .click(function(){site.route('/payment-methods')})
+              .click(function(){site.route('/payments/methods')})
           )
         )
       });
@@ -64,16 +65,18 @@ Please confirm the products below that will be purchased with your default payme
       window.current_checkout = products;
       var product_ids = [];
       for (var i in products){
-        product_ids.push(i)
+        product_ids.push({$oid: products[i]['id']});
       }
       var self = this;
       self.added_shipping = false;
       var rtm = new RTM("products", false, true);
-      rtm.listen({"_id": {"$in": product_ids}}, function (data){
+      rtm.listen({_id: {$in: product_ids}}, function (data){
         if (data.data.require_shipping && !self.added_shipping){
           // add a shipping form to the page
+          self.added_shipping = true;
           $('#content').append($('<json-to-form>')
             .attr('form-title', 'Shipping information')
+            .attr("id", "shipping")
             .text(JSON.stringify({
               address_line_1: "",
               post_code: "",
@@ -95,7 +98,7 @@ Please confirm the products below that will be purchased with your default payme
                 .text("delete")
                 .on("click", data, function(e){
                   delete products[e.data.id];
-                  site.route("/make-payment/" + JSON.stringify(products));
+                  site.route("/payments/pay/" + JSON.stringify(products));
                 })
             )
           )
@@ -105,9 +108,9 @@ Please confirm the products below that will be purchased with your default payme
         for (var i in products){
           var product = products[i];
           site.plugin_api('payment', 'make-payment', {
-            user_id: $.Cookie('userID'),
-            session: $.Cookie('session')
-            
+            shipping: JSON.stringify($('json-to-form#shipping')[0].serialize()),
+            orders: self.products,
+            payment_method: self.method['index']
           });
         }
       });
