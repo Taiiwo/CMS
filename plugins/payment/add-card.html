@@ -34,10 +34,10 @@
                 site.toast("Payment method added");
                 user_data.nmi_vaults = data.vaults;
                 if (self.product_id){
-                  site.route('/make-payment/' + self.product_id.value);
+                  site.route('/payments/pay/' + self.product_id.value);
                 }
                 else {
-                  site.route('/payment-methods');
+                  site.route('/payments/methods');
                 }
               }
               else {
