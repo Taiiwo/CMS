@@ -3,7 +3,7 @@ import os
 
 from flask import Flask
 from flask_socketio import SocketIO
-app = Flask(__name__)
+app = Flask(__name__, template_folder="../site")
 socket = SocketIO(app)
 
 root_logger = logging.getLogger(__name__)
