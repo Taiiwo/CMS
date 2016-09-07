@@ -46,6 +46,11 @@ errors = [{
         "details": "The specified user could not be found.",
         "status_code": 400
     },
+    {
+        "name": "data_missing",
+        "details": "Values required for this function to run were not found",
+        "status_code": 400
+    }
 ]
 
 error_names = {}
