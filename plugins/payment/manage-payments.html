@@ -1,0 +1,64 @@
+<link rel="import" href="../layout/taii-list.html" />
+<dom-module id="manage-payments">
+    <template>
+        <style>
+            /**/
+            .card {
+                width:270px;
+                height: unset !important;
+            }
+            .card img {
+                margin: 0px;
+                padding: 0px;
+                display: block;
+            }
+        </style>
+        <div class="container">      
+          <taii-list id='payments'></taii-list>
+        </div>
+        <div class="fixed-action-btn" style="bottom: 45px; right: 24px;">
+          <a class="btn-floating btn-large red" href="#/payments/products/create">
+            <i class="large material-icons">add</i>
+          </a>
+        </div>
+    </template>
+</dom-module>
+<script>
+    Polymer({
+        is: "manage-payments",
+        attached: function() {
+            // connect to the component API
+            var rtm = new RTM("sales");
+            // empty the grid after it's finished loading to the page
+            site.append_stack(function(){
+              $('#grid').empty();
+            });
+            // listen for all public documents sent by "Products" in the
+            // "products" collection
+            rtm.listen({sender: "Payments"}, function(data){
+              // append post to grid after it's done loading
+              site.append_stack(function(){
+                // do a bunch of lame JavaScript formatting
+                $('#payments')[0].add_item(
+                  data.data.product.name,
+                  $('<span>').text("Sold " +
+                                   data.data.quantity +
+                                   " for " +
+                                  data.data.amount),
+                  "money",
+                  $('<div/>').append(
+                    $('<a>').attr("href", "#/products/edit/" + data.id).append(
+                      $("<i>").addClass('material-icons')
+                        .text("edit")
+                    ),
+                    $('<a>').attr("href", "#").append(
+                      $("<i>").addClass('material-icons')
+                        .text("delete")
+                    )
+                  )
+                )
+              });
+            });
+        }
+    });
+</script>
