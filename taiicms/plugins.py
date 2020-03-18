@@ -40,7 +40,9 @@ def refresh_plugins():
     for p in plugin_names:
         logger.info("Loading plugin '%s'" % p)
         if os.path.exists(os.path.join("plugins", p, "default_config.json")):
-            default_config = json.load(open(os.path.join("plugins", p, "default_config.json")))
+            default_config = json.load(
+                open(os.path.join("plugins", p, "default_config.json"))
+            )
         else:
             default_config = {}
         default_config["enabled"] = False
@@ -49,8 +51,6 @@ def refresh_plugins():
             config["plugins"][p] = default_config
         else:
             config["plugins"][p] = merge_dicts(default_config, config["plugins"][p])
-
-
 
         plugin_info = json.load(open(os.path.join("plugins", p, "plugin.json")))
         plugin_info["config"] = config["plugins"][p]
@@ -69,12 +69,10 @@ def refresh_plugins():
                     "reason": "missing_dependencies",
                 }
             else:
-                plugin["status"] = {
-                    "status": "functional",
-                    "reason": None
-                }
+                plugin["status"] = {"status": "functional", "reason": None}
 
     save_config()
+
 
 refresh_plugins()
 
@@ -83,7 +81,9 @@ def load_plugin(plugin_name):
     if plugin_name not in plugins:
         refresh_plugins()
         if plugin_name not in plugins:
-            raise ValueError("Plugin '%s' does not exist but was specified in the config.")
+            raise ValueError(
+                "Plugin '%s' does not exist but was specified in the config."
+            )
 
     plugin = plugins[plugin_name]
     if os.path.exists(os.path.join("plugins", plugin_name, "__init__.py")):
@@ -98,7 +98,7 @@ def load_plugin(plugin_name):
                     if not IS_VIRTUAL_ENV:
                         args.append("--target=%s" % "./imports")
 
-                    result = pip.main(args)
+                    result = pip.main(args)  # Install the module in the message above
                     if result != 0:
                         logger.error("Could not install '%s'. Disabling plugin." % req)
                         config["plugins"][plugin_name]["enabled"] = False
@@ -115,12 +115,12 @@ def load_plugin(plugin_name):
 
             if "file_path" in page:
                 site.pages[path] = {
-                    "file_path": "/".join(("", "plugins", plugin_name, page["file_path"]))
+                    "file_path": "/".join(
+                        ("", "plugins", plugin_name, page["file_path"])
+                    )
                 }
             elif "element" in page:
-                site.pages[path] = {
-                    "element": page["element"]
-                }
+                site.pages[path] = {"element": page["element"]}
 
 
 def load_plugins():
@@ -131,6 +131,7 @@ def load_plugins():
 
 
 load_plugins()
+
 
 @app.route("/plugins/<string:plugin>/<path:path>")
 def plugin_file_resolver(plugin, path):
@@ -144,6 +145,7 @@ def plugin_file_resolver(plugin, path):
             return send_from_directory(f_dir, path)
     except KeyError:
         abort(404)
+
 
 @app.route("/plugin-components.html")
 def plugin_components():

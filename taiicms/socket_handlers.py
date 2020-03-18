@@ -12,7 +12,7 @@ from bson.objectid import ObjectId
 from pymongo.errors import DuplicateKeyError
 
 from . import app, config, socket
-from flask.ext.socketio import emit, send
+from flask_socketio import emit, send
 from .api import util, make_error_response, make_success_response
 
 # SocketIO handlers that allow limited database access to the front end
@@ -23,16 +23,18 @@ class Socket:
         self.sid = sid
         self.query = query
         self.connected = True
-        auths = query['auths']
+        auths = query["auths"]
         self.ids = list(ObjectId(auth[0]) for auth in auths)
-        self.where = query['where'] if "where" in query else False
+        self.where = query["where"] if "where" in query else False
 
     # Emits data to a socket"s unique room
     def emit(self, event, data):
         emit(event, data, room=self.sid)
 
+
 live_sockets = {}
 all_sockets = {}
+
 
 @socket.on("listen", namespace="/component")
 def listen_handler(data):
@@ -41,22 +43,22 @@ def listen_handler(data):
         emit("log", "Missing Arguments")
         return "0"
     # check all authentications
-    users = util.get_collection('users', db=util.config['auth_db'])
-    auths = util.escape_user_query(request_data['auths'])
+    users = util.get_collection("users", db=util.config["auth_db"])
+    auths = util.escape_user_query(request_data["auths"])
     for pair in auths:
         if not util.auth(pair[0], pair[1]):
             emit("log", "A supplied username was not found")
             return "0"
     if "where" in request_data:
-        request_data['where'] = util.escape_user_query(request_data['where'])
+        request_data["where"] = util.escape_user_query(request_data["where"])
     # send the user backlogs if requested
     if "backlog" in request_data and request_data["backlog"]:
         # get previously sent documents
         backlog = util.get_documents(
-            request_data['auths'],
+            request_data["auths"],
             request_data["collection"],
             time_order=True,
-            where=request_data['where'] if "where" in request_data else False
+            where=request_data["where"] if "where" in request_data else False,
         )
         # send each document separately
         for document in backlog:
@@ -68,7 +70,7 @@ def listen_handler(data):
                     "data": document["data"],
                     "id": str(document["_id"]),
                     "ts": document["ts"],
-                    "update": False
+                    "update": False,
                 }
                 emit("data", document_tidy)
     # add socket to dict of sockets to keep updated
@@ -81,23 +83,24 @@ def listen_handler(data):
     live_sockets[request_data["collection"]].append(socket)
     all_sockets[socket.sid] = socket
 
+
 @socket.on("send", namespace="/component")
 def send_handler(data):
     request = json.loads(data)
     print(request)
     # validate request
     if not util.keys_exist(
-            ["sender", "recipient", "auths", "collection", "data"],
-            request):
+        ["sender", "recipient", "auths", "collection", "data"], request
+    ):
         emit("log", "Missing Arguments")
         return "0"
     # find the auth pair of the desired sender
     users = util.get_collection("users", db=util.config["auth_db"])
-    sender = users.find_one({"username": request['sender']});
+    sender = users.find_one({"username": request["sender"]})
     sender_pair = False
-    for auth in request['auths']:
-      if auth[0] == str(sender["_id"]):
-        sender_pair = auth
+    for auth in request["auths"]:
+        if auth[0] == str(sender["_id"]):
+            sender_pair = auth
     if not sender_pair:
         emit("log", "Sender authentication not found")
         return "0"
@@ -107,18 +110,22 @@ def send_handler(data):
         emit("log", "Failed to authenticate sender")
         return "0"
     # find recipient
-    recipient = users.find_one({"username": request['recipient']})
+    recipient = users.find_one({"username": request["recipient"]})
     if not recipient:
         emit("log", "Recipient username does not exist")
         return False
     # store document
-    document = util.send(request['data'], str(sender["_id"]),
-                         str(recipient["_id"]), request['collection'])
+    document = util.send(
+        request["data"],
+        str(sender["_id"]),
+        str(recipient["_id"]),
+        request["collection"],
+    )
     if not document:
-        emit('log', make_error(
-            'unknown_error',
-            "Data was not added to the DB for some reason"
-        ))
+        emit(
+            "log",
+            make_error("unknown_error", "Data was not added to the DB for some reason"),
+        )
         return "0"
     # send Updates
     document_tidy = {
@@ -127,28 +134,27 @@ def send_handler(data):
         "data": document["data"],
         "id": str(document["_id"]),
         "ts": document["ts"],
-        "update": False
+        "update": False,
     }
     util.emit_to_relevant_sockets(request, document, live_sockets)
     emit("log", "Data was sent")
-  
+
+
 @socket.on("update", namespace="/component")
 def update_handler(data):
     request = json.loads(data)
     # validate request
-    if not util.keys_exist(
-            ["auths", "collection", "data", "document_id"],
-            request):
+    if not util.keys_exist(["auths", "collection", "data", "document_id"], request):
         emit("log", "Missing Arguments")
         return "0"
     # find document
-    coll = util.get_collection(request['collection'])
-    document = coll.find_one({"_id": ObjectId(request['document_id'])})
+    coll = util.get_collection(request["collection"])
+    document = coll.find_one({"_id": ObjectId(request["document_id"])})
     # authenticate update
     authenticated = False
-    for auth in request['auths']:
-        if auth[0] == document['sender']:
-            if util.auth(auth[0], auth[1]): 
+    for auth in request["auths"]:
+        if auth[0] == document["sender"]:
+            if util.auth(auth[0], auth[1]):
                 authenticated = True
                 sender = auth[0]
                 break
@@ -160,13 +166,14 @@ def update_handler(data):
         emit("log", "Insufficient permissions")
         return "0"
     # update document
-    document = util.update_document(request['data'], request['document_id'],
-                                    request['collection'])
+    document = util.update_document(
+        request["data"], request["document_id"], request["collection"]
+    )
     if not document:
-        emit('log', make_error(
-            'unknown_error',
-            "Data was not added to the DB for some reason"
-        ))
+        emit(
+            "log",
+            make_error("unknown_error", "Data was not added to the DB for some reason"),
+        )
         return "0"
     # send Updates
     document_tidy = {
@@ -175,7 +182,7 @@ def update_handler(data):
         "data": document["data"],
         "id": str(document["_id"]),
         "ts": document["ts"],
-        "update": True
+        "update": True,
     }
     util.emit_to_relevant_sockets(request, document, live_sockets)
     emit("log", "Data was updated")

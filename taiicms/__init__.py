@@ -3,12 +3,20 @@ import os
 
 from flask import Flask
 from flask_socketio import SocketIO
-app = Flask(__name__, template_folder="../site")
+
+app = Flask(
+    __name__,
+    template_folder="../site",
+    static_url_path="/static",
+    static_folder="../site/",
+)
 socket = SocketIO(app)
 
 root_logger = logging.getLogger(__name__)
 ch = logging.StreamHandler()
-ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+ch.setFormatter(
+    logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+)
 root_logger.addHandler(ch)
 
 # import config in a special way to make more intuitive to use

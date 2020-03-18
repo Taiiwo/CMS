@@ -1,5 +1,5 @@
 from flask import make_response, jsonify
-from flask.ext.cors import CORS
+from flask_cors import CORS
 
 from .. import app, util, config, root_logger
 
@@ -15,6 +15,7 @@ class ApiError(Exception):
     name = "api_error"
     details = "Something wrong happened with the data you send to the API."
     status_code = 200
+
     def __init__(self, data=None):
         self.data = data
 
@@ -62,10 +63,7 @@ class DataRequired(DataInvalid):
 @app.errorhandler(ApiError)
 def api_exception_handler(e):
     error_data = e.to_dict()
-    return jsonify({
-        "success": False,
-        "errors": [error_data]
-    })
+    return jsonify({"success": False, "errors": [error_data]})
 
 
 def make_success_response(extra={}):
@@ -94,12 +92,15 @@ def make_error(error_name, extra_detail=None):
     return res
 
 
-
 has_warned = False
+
+
 def make_error_response(*args, **kwargs):
     global has_warned
     if not has_warned:
-        api_logger.warn("`make_error_response(<error>)` is deprecated. Use `raise <error>()` instead")
+        api_logger.warn(
+            "`make_error_response(<error>)` is deprecated. Use `raise <error>()` instead"
+        )
         has_warned = True
 
     error_res = make_error(*args, **kwargs)
